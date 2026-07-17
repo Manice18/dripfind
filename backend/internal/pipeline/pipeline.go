@@ -95,11 +95,11 @@ func (p *Pipeline) run(ctx context.Context, outfitID uuid.UUID, sourceURL string
 			Fit:         vi.Fit,
 			Pattern:     vi.Pattern,
 			Confidence:  vi.Confidence,
-			SearchQuery: search.BuildQueryFromVision(vi, analyzed.Gender),
+			SearchQuery: search.BuildQueryFromVision(vi, analyzed.Gender, analyzed.Occasion),
 		}
 
 		result := p.Search.SearchItem(ctx, item, analyzed.Gender)
-		ranked := p.Ranker.Rank(item, result.Products, analyzed.Gender)
+		ranked := p.Ranker.Rank(item, result.Products, analyzed.Gender, analyzed.Occasion)
 		item.Products = ranked
 		outfit.Items = append(outfit.Items, item)
 		log.Info("item search ranked",

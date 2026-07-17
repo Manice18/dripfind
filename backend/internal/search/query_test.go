@@ -14,23 +14,38 @@ func TestBuildQueryDeterministic(t *testing.T) {
 		Fit:      "Oversized",
 		Pattern:  "Solid",
 	}
-	got := BuildQuery(item, "male")
-	want := "White Oversized Linen Casual Shirt Men"
+	got := BuildQuery(item, "male", "Casual")
+	want := "Men White Oversized Linen Casual Shirt"
 	if got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}
 }
 
-func TestBuildQueryStripedShirt(t *testing.T) {
+func TestBuildQueryFormalShirt(t *testing.T) {
 	item := models.ClothingItem{
 		Category: "Shirt",
-		Color:    "White and gray",
+		Color:    "White",
 		Material: "Cotton",
 		Fit:      "Regular",
-		Pattern:  "Striped",
+		Pattern:  "Solid",
 	}
-	got := BuildQuery(item, "male")
-	want := "White Striped Regular Cotton Casual Shirt Men"
+	got := BuildQuery(item, "male", "Formal")
+	want := "Men White Regular Cotton Formal Dress Shirt"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
+
+func TestBuildQueryNecktie(t *testing.T) {
+	item := models.ClothingItem{
+		Category: "Tie",
+		Color:    "Black",
+		Material: "Silk",
+		Fit:      "Regular",
+		Pattern:  "Solid",
+	}
+	got := BuildQuery(item, "male", "Formal")
+	want := "Men Black Silk Formal Necktie"
 	if got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}
@@ -44,8 +59,8 @@ func TestBuildQueryDenimTrousers(t *testing.T) {
 		Fit:      "Relaxed",
 		Pattern:  "Solid",
 	}
-	got := BuildQuery(item, "male")
-	want := "Black Baggy Denim Jeans Men"
+	got := BuildQuery(item, "male", "Casual")
+	want := "Men Black Baggy Denim Jeans"
 	if got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}

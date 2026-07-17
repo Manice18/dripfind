@@ -9,7 +9,7 @@ import (
 )
 
 type Ranker interface {
-	Rank(item models.ClothingItem, products []models.Product, gender string) []models.Product
+	Rank(item models.ClothingItem, products []models.Product, gender, occasion string) []models.Product
 }
 
 type ScoreRanker struct {
@@ -22,18 +22,19 @@ type ScoreRanker struct {
 func NewScoreRanker() *ScoreRanker {
 	return &ScoreRanker{
 		MaxPrice:      15000,
-		MinKeepScore:  62,
+		MinKeepScore:  55,
 		MaxPerWebsite: 2,
-		Limit:         10,
+		Limit:         12,
 	}
 }
 
-func (r *ScoreRanker) Rank(item models.ClothingItem, products []models.Product, gender string) []models.Product {
+func (r *ScoreRanker) Rank(item models.ClothingItem, products []models.Product, gender, occasion string) []models.Product {
 	if len(products) == 0 {
 		return products
 	}
 
-	scored := make([]models.Product, 0, len(products))
+	primary := make([]models.Product, 0, len(products))
+	backup := make([]models.Product, 0, len(products))
 	seen := map[string]struct{}{}
 
 	for _, p := range products {
@@ -43,25 +44,35 @@ func (r *ScoreRanker) Rank(item models.ClothingItem, products []models.Product, 
 		}
 		seen[key] = struct{}{}
 
-		if hardReject(item, p, gender) {
+		if hardReject(item, p, gender, occasion) {
 			continue
 		}
 
 		p.MatchScore = r.score(item, p, gender)
-		if p.MatchScore < r.MinKeepScore {
-			continue
+		if p.MatchScore >= r.MinKeepScore {
+			primary = append(primary, p)
+		} else if p.MatchScore >= r.MinKeepScore-10 {
+			backup = append(backup, p)
 		}
-		scored = append(scored, p)
 	}
 
-	sort.SliceStable(scored, func(i, j int) bool {
-		if scored[i].MatchScore == scored[j].MatchScore {
-			return scored[i].Price < scored[j].Price
+	sort.SliceStable(primary, func(i, j int) bool {
+		if primary[i].MatchScore == primary[j].MatchScore {
+			return primary[i].Price < primary[j].Price
 		}
-		return scored[i].MatchScore > scored[j].MatchScore
+		return primary[i].MatchScore > primary[j].MatchScore
+	})
+	sort.SliceStable(backup, func(i, j int) bool {
+		return backup[i].MatchScore > backup[j].MatchScore
 	})
 
-	return diversify(scored, r.MaxPerWebsite, r.Limit)
+	merged := primary
+	// If filters left the grid too empty, fill with next-best safe matches.
+	if len(merged) < 6 {
+		merged = append(merged, backup...)
+	}
+
+	return diversify(merged, r.MaxPerWebsite, r.Limit)
 }
 
 // diversify keeps score order but caps how many results come from one site,
@@ -89,10 +100,37 @@ func diversify(products []models.Product, maxPerWebsite, limit int) []models.Pro
 		out = append(out, p)
 	}
 
+	// Second pass: if still sparse, only add from sites not yet shown.
+	if len(out) < 6 {
+		for _, p := range products {
+			if len(out) >= limit {
+				break
+			}
+			site := strings.ToLower(p.Website)
+			if counts[site] > 0 {
+				continue
+			}
+			if alreadyIn(out, p) {
+				continue
+			}
+			counts[site]++
+			out = append(out, p)
+		}
+	}
+
 	return out
 }
 
-func hardReject(item models.ClothingItem, p models.Product, gender string) bool {
+func alreadyIn(out []models.Product, p models.Product) bool {
+	for _, o := range out {
+		if o.Image == p.Image && o.Title == p.Title {
+			return true
+		}
+	}
+	return false
+}
+
+func hardReject(item models.ClothingItem, p models.Product, gender, occasion string) bool {
 	title := strings.ToLower(p.Title + " " + p.Brand + " " + p.Website)
 
 	if isKidsOrBaby(title) {
@@ -107,7 +145,8 @@ func hardReject(item models.ClothingItem, p models.Product, gender string) bool 
 
 	// Striped/checked/etc must appear in the title when vision says so.
 	pattern := strings.ToLower(strings.TrimSpace(item.Pattern))
-	if pattern != "" && pattern != "solid" && pattern != "other" {
+	cat := strings.ToLower(strings.TrimSpace(item.Category))
+	if cat != "tie" && pattern != "" && pattern != "solid" && pattern != "other" {
 		if !patternSynonym(title, item.Pattern) && !containsAny(title, item.Pattern) {
 			return true
 		}
@@ -123,23 +162,50 @@ func hardReject(item models.ClothingItem, p models.Product, gender string) bool 
 		}
 	}
 
-	// Strong color conflicts (e.g. pink/red shirt when looking for white/grey).
+	// Reject clear color conflicts, but allow titles that omit the color word.
 	if item.Color != "" && hasConflictingColor(title, item.Color) && !colorMatch(title, item.Color) {
 		return true
 	}
-	if hasLoudConflictColor(title, item.Color) {
+	if hasLoudConflictColor(title, item.Color) && !colorMatch(title, item.Color) {
 		return true
 	}
 
-	// Slim/skinny is wrong for relaxed/oversized/wide fits.
+	// Solid looks should not return graphic/print-heavy products (except ties with subtle weave).
+	if strings.EqualFold(item.Pattern, "Solid") && cat != "tie" && isGraphicTitle(title) {
+		return true
+	}
+
+	if isFormalOccasion(occasion) && rejectsFormalLook(title, cat) {
+		return true
+	}
+
 	fit := strings.ToLower(item.Fit)
-	if fit == "relaxed" || fit == "oversized" || fit == "wide" {
-		if containsAny(title, "slim") || containsAny(title, "skinny") || containsAny(title, "tapered") {
+	if (cat == "jeans" || cat == "trousers") && (fit == "relaxed" || fit == "oversized" || fit == "wide") {
+		if containsAny(title, "skinny") || containsAny(title, "super slim") {
 			return true
 		}
 	}
 
 	return false
+}
+
+func isFormalOccasion(occasion string) bool {
+	o := strings.ToLower(strings.TrimSpace(occasion))
+	return o == "formal" || o == "business"
+}
+
+func rejectsFormalLook(title, category string) bool {
+	switch strings.ToLower(category) {
+	case "shirt":
+		return containsAny(title, "embroider") || containsAny(title, "casual") ||
+			containsAny(title, "oversized") || containsAny(title, "graphic") ||
+			containsAny(title, "tie dye") || containsAny(title, "tie-dye")
+	case "suit", "blazer":
+		return containsAny(title, "tote") || containsAny(title, "bag") ||
+			containsAny(title, "backpack") || containsAny(title, "duffle")
+	default:
+		return false
+	}
 }
 
 func isKidsOrBaby(title string) bool {
@@ -263,14 +329,38 @@ func genderMismatch(title, gender string) bool {
 	g := strings.ToLower(strings.TrimSpace(gender))
 	switch g {
 	case "male", "men", "man":
-		return containsAny(title, "women") || containsAny(title, "woman") || containsAny(title, "ladies") ||
-			containsAny(title, "girls") || strings.Contains(title, " women's") || strings.Contains(title, "womens")
+		if containsAny(title, "women") || containsAny(title, "woman") || containsAny(title, "ladies") ||
+			containsAny(title, "girls") || strings.Contains(title, "womens") || strings.Contains(title, "womenswear") {
+			return true
+		}
+		// Female-coded garment types / brands that rarely appear on men's listings.
+		femaleCoded := []string{
+			"corset", "bralette", "crop top", "cropped top", "blouse", "skort",
+			"bodycon", "camisole", "cami ", "lingerie", "shapewear", "saree",
+			"lehenga", "kurti", "anarkali", "peplum",
+			" lov ", "lov ", " gia ", "gia ", " nuon ", "nuon ",
+			"bombay paisley", "a-line dress", "plus size",
+		}
+		for _, w := range femaleCoded {
+			if strings.Contains(title, w) {
+				return true
+			}
+		}
+		return false
 	case "female", "women", "woman":
 		return containsAny(title, "men's") || containsAny(title, "mens ") || strings.HasPrefix(title, "men ") ||
-			containsAny(title, "male") && !containsAny(title, "female")
+			(containsAny(title, "male") && !containsAny(title, "female"))
 	default:
 		return false
 	}
+}
+
+func hasMensSignal(title string) bool {
+	return strings.Contains(title, "men's") || strings.Contains(title, "mens ") ||
+		strings.Contains(title, "menswear") || strings.Contains(title, " for men") ||
+		strings.Contains(title, "- men") || strings.Contains(title, " men ") ||
+		strings.HasPrefix(title, "men ") || strings.Contains(title, "male ") ||
+		strings.Contains(title, " men-") || strings.HasSuffix(title, " men")
 }
 
 func genderAligned(title, gender string) bool {
@@ -418,13 +508,27 @@ func categoryMatch(title, category string) bool {
 	case "jeans":
 		return isDenimTitle(title)
 	case "shirt":
-		return containsAny(title, "shirt") && !isTShirtTitle(title) && !containsAny(title, "polo")
+		return containsAny(title, "shirt") && !isTShirtTitle(title) && !containsAny(title, "polo") && !isTankTitle(title)
+	case "t-shirt", "tshirt":
+		return isTShirtTitle(title) || (containsAny(title, "tee") && !isTankTitle(title))
+	case "tank top", "tanktop", "vest":
+		return isTankTitle(title)
+	case "tie":
+		return isNecktieTitle(title)
+	case "suit":
+		return containsAny(title, "suit") && !containsAny(title, "swimsuit") && !containsAny(title, "tracksuit")
+	case "blazer":
+		return containsAny(title, "blazer") || containsAny(title, "suit jacket")
 	case "bag":
 		return containsAny(title, "backpack") || containsAny(title, "bag")
 	case "watch":
 		return containsAny(title, "watch")
 	case "jewelry":
 		return containsAny(title, "necklace") || containsAny(title, "chain") || containsAny(title, "jewellery") || containsAny(title, "jewelry")
+	case "sunglasses":
+		return containsAny(title, "sunglass") || containsAny(title, "eyewear")
+	case "belt":
+		return containsAny(title, "belt")
 	default:
 		return false
 	}
@@ -434,15 +538,62 @@ func isCategoryMismatch(title, category string) bool {
 	category = strings.ToLower(strings.TrimSpace(category))
 	switch category {
 	case "shirt":
-		// Button-down shirt search must not return tees/polos/sets.
-		if isTShirtTitle(title) || containsAny(title, "polo") {
+		if isTShirtTitle(title) || containsAny(title, "polo") || isTankTitle(title) {
+			return true
+		}
+		// "dress shirt" is valid; bare "dress" (womenswear) is not.
+		if containsAny(title, "dress") && !containsAny(title, "dress shirt") {
 			return true
 		}
 		return containsAny(title, "kurta") || containsAny(title, "salwar") || containsAny(title, "sherwani") ||
-			containsAny(title, "dress") || containsAny(title, "pyjama") || containsAny(title, "pajama") ||
+			containsAny(title, "pyjama") || containsAny(title, "pajama") ||
 			(containsAny(title, "set") && (containsAny(title, "pyjama") || containsAny(title, "pajama")))
 	case "t-shirt", "tshirt":
+		if isTankTitle(title) {
+			return true
+		}
+		if containsAny(title, "shirt") && !isTShirtTitle(title) && !strings.Contains(title, "tshirt") {
+			if !strings.Contains(title, "t-shirt") && !strings.Contains(title, "tee") {
+				return containsAny(title, "casual shirt") || containsAny(title, "linen shirt") || containsAny(title, "oxford")
+			}
+		}
 		return false
+	case "tank top", "tanktop", "vest":
+		if isTShirtTitle(title) && !strings.Contains(title, "sleeveless") {
+			return true
+		}
+		if containsAny(title, "round neck") || containsAny(title, "polo") || containsAny(title, "henley") {
+			return true
+		}
+		if containsAny(title, "sleeve") && !containsAny(title, "sleeveless") {
+			return true
+		}
+		if !isTankTitle(title) {
+			return true
+		}
+		return false
+	case "tie":
+		// "Tie" must mean necktie — never tie-dye / tie-up apparel.
+		if isTieDyeOrTieUp(title) {
+			return true
+		}
+		if isTShirtTitle(title) || containsAny(title, "dress") || containsAny(title, "polo") ||
+			containsAny(title, "hoodie") || containsAny(title, "jeans") ||
+			(containsAny(title, "shirt") && !isNecktieTitle(title)) {
+			return true
+		}
+		return !isNecktieTitle(title)
+	case "suit":
+		if containsAny(title, "bag") || containsAny(title, "tote") || containsAny(title, "backpack") ||
+			containsAny(title, "tracksuit") || containsAny(title, "swimsuit") || isTShirtTitle(title) {
+			return true
+		}
+		if !containsAny(title, "suit") && !containsAny(title, "blazer") {
+			return true
+		}
+		return false
+	case "blazer":
+		return !containsAny(title, "blazer") && !containsAny(title, "suit jacket")
 	case "trousers", "jeans":
 		return containsAny(title, "skirt") || containsAny(title, "shorts") || containsAny(title, "legging") ||
 			containsAny(title, "track pant")
@@ -451,6 +602,43 @@ func isCategoryMismatch(title, category string) bool {
 	default:
 		return false
 	}
+}
+
+func isTieDyeOrTieUp(title string) bool {
+	return strings.Contains(title, "tie-dye") || strings.Contains(title, "tie dye") ||
+		strings.Contains(title, "tiedye") || strings.Contains(title, "tie and dye") ||
+		strings.Contains(title, "tie-up") || strings.Contains(title, "tie up")
+}
+
+func isNecktieTitle(title string) bool {
+	if isTieDyeOrTieUp(title) {
+		return false
+	}
+	if containsAny(title, "necktie") || containsAny(title, "neck tie") || containsAny(title, "cravat") {
+		return true
+	}
+	looksLikeTie := strings.Contains(title, " tie") || strings.HasSuffix(title, "tie") || strings.Contains(title, "tie ")
+	if !looksLikeTie {
+		return false
+	}
+	return !isTShirtTitle(title) && !containsAny(title, "shirt") && !containsAny(title, "dress") && !containsAny(title, "polo")
+}
+
+func isTankTitle(title string) bool {
+	// Prefer explicit tank/sleeveless. Bare "vest" is OK for Indian men's undershirts.
+	if containsAny(title, "tank") || containsAny(title, "sleeveless") ||
+		containsAny(title, "muscle tee") || containsAny(title, "ribbed tank") {
+		return true
+	}
+	if containsAny(title, "vest") && !isTShirtTitle(title) {
+		return true
+	}
+	return false
+}
+
+func isGraphicTitle(title string) bool {
+	return containsAny(title, "graphic") || containsAny(title, "print") || containsAny(title, "logo") ||
+		containsAny(title, "floral") || containsAny(title, "typography") || containsAny(title, "printed")
 }
 
 func isTShirtTitle(title string) bool {

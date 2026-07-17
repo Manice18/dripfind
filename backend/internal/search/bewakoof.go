@@ -26,7 +26,7 @@ func (p *BewakoofProvider) Name() string { return "bewakoof" }
 func (p *BewakoofProvider) Search(ctx context.Context, item models.ClothingItem, gender string) ([]models.Product, error) {
 	query := item.SearchQuery
 	if query == "" {
-		query = BuildQuery(item, gender)
+		query = BuildQuery(item, gender, "")
 	}
 
 	p.session.warm(ctx, "https://www.bewakoof.com/")

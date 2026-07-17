@@ -24,7 +24,7 @@ func (p *AmazonProvider) Name() string { return "amazon" }
 func (p *AmazonProvider) Search(ctx context.Context, item models.ClothingItem, gender string) ([]models.Product, error) {
 	query := item.SearchQuery
 	if query == "" {
-		query = BuildQuery(item, gender)
+		query = BuildQuery(item, gender, "")
 	}
 
 	p.session.warm(ctx, "https://www.amazon.in/")

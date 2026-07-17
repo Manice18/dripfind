@@ -31,7 +31,7 @@ func (p *SerpShoppingProvider) Name() string { return "google_shopping" }
 func (p *SerpShoppingProvider) Search(ctx context.Context, item models.ClothingItem, gender string) ([]models.Product, error) {
 	query := item.SearchQuery
 	if query == "" {
-		query = BuildQuery(item, gender)
+		query = BuildQuery(item, gender, "")
 	}
 
 	u := url.URL{

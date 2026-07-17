@@ -115,7 +115,7 @@ func (p *ShopifyProvider) searchQuery(ctx context.Context, query string) ([]mode
 func shopifyQueries(item models.ClothingItem, gender string) []string {
 	full := item.SearchQuery
 	if full == "" {
-		full = BuildQuery(item, gender)
+		full = BuildQuery(item, gender, "")
 	}
 
 	parts := []string{}

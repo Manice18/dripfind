@@ -23,7 +23,7 @@ func (p *AjioProvider) Name() string { return "ajio" }
 func (p *AjioProvider) Search(ctx context.Context, item models.ClothingItem, gender string) ([]models.Product, error) {
 	query := item.SearchQuery
 	if query == "" {
-		query = BuildQuery(item, gender)
+		query = BuildQuery(item, gender, "")
 	}
 
 	apiURL := "https://www.ajio.com/api/search?" + url.Values{

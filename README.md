@@ -2,7 +2,7 @@
 
 Paste a Pinterest pin URL → detect the outfit → search multiple Indian retailers → return ranked shoppable matches.
 
-MVP source: **Pinterest only** (Instagram / TikTok / screenshots later).
+MVP source: **Pinterest only**.
 
 **Search providers:** Amazon, Myntra, Ajio, Flipkart, Bewakoof, Snitch, Veirdo, Westside, Off Duty, Freakins, The Pant Project, The Bear House, Powerlook, Bluorng, Rare Rabbit (+ optional SerpAPI).
 
@@ -31,9 +31,9 @@ make api
 make web
 ```
 
-- App: http://localhost:3000  
-- API: http://localhost:8080  
-- Adminer (optional): `make tools` → http://localhost:8081  
+- App: http://localhost:3000
+- API: http://localhost:8080
+- Adminer (optional): `make tools` → http://localhost:8081
 
 Without `OPENAI_API_KEY`, the API runs in **demo vision mode** (sample Old Money outfit) so the full pipeline still works.
 
@@ -41,14 +41,14 @@ Product search hits **live** retailers when they allow the request (Myntra, Ajio
 
 ## API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/analyze` | `{ "url": "..." }` → `{ "id": "..." }` |
-| `GET` | `/result/{id}` | Poll analysis status + outfit |
-| `GET` | `/history` | Recent searches |
-| `DELETE` | `/history/{id}` | Remove history entry |
-| `GET` | `/health` | Health check |
-| `GET` | `/images/...` | Saved outfit images |
+| Method   | Path            | Description                            |
+| -------- | --------------- | -------------------------------------- |
+| `POST`   | `/analyze`      | `{ "url": "..." }` → `{ "id": "..." }` |
+| `GET`    | `/result/{id}`  | Poll analysis status + outfit          |
+| `GET`    | `/history`      | Recent searches                        |
+| `DELETE` | `/history/{id}` | Remove history entry                   |
+| `GET`    | `/health`       | Health check                           |
+| `GET`    | `/images/...`   | Saved outfit images                    |
 
 ## Pipeline
 

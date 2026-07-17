@@ -27,7 +27,7 @@ func (p *FlipkartProvider) Name() string { return "flipkart" }
 func (p *FlipkartProvider) Search(ctx context.Context, item models.ClothingItem, gender string) ([]models.Product, error) {
 	query := item.SearchQuery
 	if query == "" {
-		query = BuildQuery(item, gender)
+		query = BuildQuery(item, gender, "")
 	}
 
 	p.session.warm(ctx, "https://www.flipkart.com/")
