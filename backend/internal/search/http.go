@@ -76,13 +76,25 @@ func (s *sessionClient) get(ctx context.Context, rawURL, accept string) ([]byte,
 }
 
 func setBrowserHeaders(req *http.Request, accept string) {
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 	req.Header.Set("Accept-Language", "en-IN,en;q=0.9")
 	req.Header.Set("Accept", accept)
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Pragma", "no-cache")
+	req.Header.Set("Sec-Ch-Ua", `"Chromium";v="131", "Not_A Brand";v="24", "Google Chrome";v="131"`)
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", `"macOS"`)
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	if strings.Contains(accept, "json") {
 		req.Header.Set("X-Requested-With", "XMLHttpRequest")
+		req.Header.Set("Sec-Fetch-Dest", "empty")
+		req.Header.Set("Sec-Fetch-Mode", "cors")
+		req.Header.Set("Sec-Fetch-Site", "same-origin")
+	} else {
+		req.Header.Set("Sec-Fetch-Dest", "document")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		req.Header.Set("Sec-Fetch-Site", "none")
+		req.Header.Set("Sec-Fetch-User", "?1")
 	}
 }
 
@@ -162,4 +174,21 @@ func brandFromTitle(title string) string {
 		return first
 	}
 	return first
+}
+
+func absolutize(base, href string) string {
+	href = strings.TrimSpace(href)
+	if href == "" {
+		return ""
+	}
+	if strings.HasPrefix(href, "http://") || strings.HasPrefix(href, "https://") {
+		return href
+	}
+	if strings.HasPrefix(href, "//") {
+		return "https:" + href
+	}
+	if !strings.HasPrefix(href, "/") {
+		href = "/" + href
+	}
+	return strings.TrimRight(base, "/") + href
 }

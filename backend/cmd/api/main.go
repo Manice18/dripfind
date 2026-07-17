@@ -72,11 +72,11 @@ func main() {
 	}
 
 	providers := []search.Provider{
-		search.NewAmazonProvider(),
 		search.NewMyntraProvider(),
 		search.NewAjioProvider(),
 		search.NewFlipkartProvider(),
 		search.NewBewakoofProvider(),
+		search.NewHMProvider(),
 	}
 	providers = append(providers, search.HomegrownShopifyBrands()...)
 	log.Info("search providers registered", "count", len(providers))

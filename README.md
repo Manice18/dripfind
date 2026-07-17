@@ -4,9 +4,9 @@ Paste a Pinterest pin URL → detect the outfit → search multiple Indian retai
 
 MVP source: **Pinterest only**.
 
-**Search providers:** Amazon, Myntra, Ajio, Flipkart, Bewakoof, Snitch, Veirdo, Westside, Off Duty, Freakins, The Pant Project, The Bear House, Powerlook, Bluorng, Rare Rabbit (+ optional SerpAPI).
+**Search providers:** Myntra, Ajio, Flipkart, Bewakoof, H&M, Snitch, Veirdo, Westside, Off Duty, Freakins, The Pant Project, The Bear House, Powerlook, Bluorng, Rare Rabbit (+ optional SerpAPI).
 
-Not yet wired (blocked / SPA / timeout): The Souled Store, Bonkers Corner, Uniqlo, Zara, MANGO, M&S, Savana, Newme, March Tee, Comma Casuals, Allen Solly / Louis Philippe brand sites.
+Not yet wired (blocked / SPA / timeout): Amazon, The Souled Store, Bonkers Corner, Uniqlo, Zara, MANGO, M&S, Savana, Newme, March Tee, Comma Casuals, Allen Solly / Louis Philippe brand sites.
 
 ## Stack
 
@@ -21,23 +21,26 @@ Not yet wired (blocked / SPA / timeout): The Souled Store, Bonkers Corner, Uniql
 cp .env.example .env
 # Optional: set OPENAI_API_KEY for real vision analysis
 
-# 2. Postgres
-make up
+# 2. Install deps (first time)
+make install
 
-# 3. API (auto-migrates on start)
-make api
+# 3. Start Postgres + API + web
+make start
 
-# 4. Web (separate terminal)
-make web
+# Stop everything
+make stop
 ```
 
 - App: http://localhost:3000
 - API: http://localhost:8080
+- Logs: `.run/api.log`, `.run/web.log`
 - Adminer (optional): `make tools` → http://localhost:8081
+
+Or run pieces separately: `make up`, `make api`, `make web`.
 
 Without `OPENAI_API_KEY`, the API runs in **demo vision mode** (sample Old Money outfit) so the full pipeline still works.
 
-Product search hits **live** retailers when they allow the request (Myntra, Ajio, Bewakoof, and others). Optional `SERPAPI_KEY` adds Google Shopping — useful when Amazon/Flipkart block scrapers.
+Product search hits **live** retailers when they allow the request (Myntra, Ajio, Bewakoof, and others). Optional `SERPAPI_KEY` adds Google Shopping — useful when Flipkart or others block scrapers.
 
 ## API
 
