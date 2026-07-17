@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS history;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS clothing_items;
+DROP TABLE IF EXISTS outfits;

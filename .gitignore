@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+web/.next/
+web/out/
+
+# env
+.env
+.env.local
+!.env.example
+
+# go
+backend/bin/
+*.exe
+
+# images (keep folders)
+backend/images/originals/*
+!backend/images/originals/.gitkeep
+backend/images/processed/*
+!backend/images/processed/.gitkeep
+
+# os / ide
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# docker
+postgres_data/
