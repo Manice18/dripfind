@@ -143,6 +143,46 @@ func TestDiversifySites(t *testing.T) {
 	}
 }
 
+func TestRejectCheckedWhenSolidLightBlue(t *testing.T) {
+	r := NewScoreRanker()
+	item := models.ClothingItem{Category: "Shirt", Color: "Light Blue", Pattern: "Solid", Fit: "Oversized", Material: "Cotton"}
+	products := []models.Product{
+		{Title: "Roadster Men Blue Checked Regular Fit Casual Shirt", Brand: "Roadster", Website: "myntra", Price: 699, Image: "a"},
+		{Title: "Roadster Men Blue Regular Fit Solid Casual Shirt", Brand: "Roadster", Website: "myntra", Price: 749, Image: "b"},
+		{Title: "Men Light Blue Solid Oversized Cotton Shirt", Brand: "Snitch", Website: "snitch", Price: 999, Image: "c"},
+		{Title: "Men Light Blue Solid Regular Fit Casual Shirt", Brand: "Powerlook", Website: "powerlook", Price: 899, Image: "d"},
+	}
+	out := r.Rank(item, products, "male", "Casual")
+	for _, p := range out {
+		low := strings.ToLower(p.Title)
+		if strings.Contains(low, "check") {
+			t.Fatalf("checked shirt should be rejected: %s", p.Title)
+		}
+	}
+	if len(out) == 0 {
+		t.Fatal("expected solid light-blue shirts")
+	}
+	// Best match should prefer explicit light blue over bare "blue".
+	if !strings.Contains(strings.ToLower(out[0].Title), "light blue") {
+		t.Fatalf("expected light blue shirt on top, got %s (%.0f)", out[0].Title, out[0].MatchScore)
+	}
+	if out[0].MatchScore < 70 {
+		t.Fatalf("expected strong score for light blue solid, got %.1f", out[0].MatchScore)
+	}
+}
+
+func TestLightBlueColorStrength(t *testing.T) {
+	if colorMatchStrength("roadster men blue checked shirt", "Light Blue") >= 1 {
+		t.Fatal("bare blue should not be a perfect light-blue match")
+	}
+	if colorMatchStrength("men light blue solid shirt", "Light Blue") < 1 {
+		t.Fatal("explicit light blue should be a full match")
+	}
+	if colorMatch("navy blue formal shirt", "Light Blue") {
+		t.Fatal("navy should not match light blue")
+	}
+}
+
 func TestRejectTieDyeForNecktie(t *testing.T) {
 	r := NewScoreRanker()
 	item := models.ClothingItem{Category: "Tie", Color: "Black", Pattern: "Solid", Fit: "Regular", Material: "Silk"}

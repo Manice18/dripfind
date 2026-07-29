@@ -3,12 +3,15 @@ import type { HistoryEntry, Outfit } from "@/types/outfit";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 
   const data = await res.json().catch(() => ({}));
@@ -30,6 +33,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ url }),
     }),
+
+  analyzeUpload: (file: File) => {
+    const body = new FormData();
+    body.append("image", file);
+    return request<{ id: string }>("/analyze/upload", {
+      method: "POST",
+      body,
+    });
+  },
 
   result: (id: string) => request<Outfit>(`/result/${id}`),
 

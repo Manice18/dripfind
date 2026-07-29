@@ -152,6 +152,11 @@ func hardReject(item models.ClothingItem, p models.Product, gender, occasion str
 		}
 	}
 
+	// Solid looks must not return checked / striped / printed pieces.
+	if strings.EqualFold(item.Pattern, "Solid") && cat != "tie" && isNonSolidPatternTitle(title) {
+		return true
+	}
+
 	// Denim bottoms must be denim/jeans — not chino/formal.
 	if wantsDenim(item) {
 		if !isDenimTitle(title) {
@@ -171,10 +176,7 @@ func hardReject(item models.ClothingItem, p models.Product, gender, occasion str
 	}
 
 	// Solid looks should not return graphic/print-heavy products (except ties with subtle weave).
-	if strings.EqualFold(item.Pattern, "Solid") && cat != "tie" && isGraphicTitle(title) {
-		return true
-	}
-
+	// Covered by isNonSolidPatternTitle above for solid items.
 	if isFormalOccasion(occasion) && rejectsFormalLook(title, cat) {
 		return true
 	}
@@ -255,25 +257,34 @@ func (r *ScoreRanker) score(item models.ClothingItem, p models.Product, gender s
 		}
 	}
 
-	colorHit := colorMatch(title, item.Color)
+	colorStrength := colorMatchStrength(title, item.Color)
 	catHit := categoryMatch(title, item.Category)
 	matHit := materialMatch(title, item.Material)
 	fitHit := fitMatch(title, item.Fit)
 	patHit := true
-	if !strings.EqualFold(item.Pattern, "Solid") && item.Pattern != "" {
+	if strings.EqualFold(item.Pattern, "Solid") {
+		patHit = !isNonSolidPatternTitle(title)
+	} else if item.Pattern != "" {
 		patHit = patternSynonym(title, item.Pattern) || containsAny(title, item.Pattern)
 	}
 
-	add(0.28, colorHit)
+	weight += 0.30
+	points += 0.30 * colorStrength
 	add(0.22, catHit)
-	add(0.16, matHit)
+	add(0.14, matHit)
 	add(0.12, fitHit)
-	add(0.14, patHit)
-	add(0.04, p.Brand != "" && !strings.EqualFold(p.Brand, "Unknown"))
-	add(0.04, genderAligned(title, gender))
+	add(0.16, patHit)
+	add(0.03, p.Brand != "" && !strings.EqualFold(p.Brand, "Unknown"))
+	add(0.03, genderAligned(title, gender))
 
-	if item.Color != "" && !colorHit && hasConflictingColor(title, item.Color) {
+	if item.Color != "" && colorStrength < 0.5 && hasConflictingColor(title, item.Color) {
+		points -= 0.40
+	}
+	if item.Color != "" && colorStrength < 0.5 && hasLoudConflictColor(title, item.Color) {
 		points -= 0.35
+	}
+	if !patHit {
+		points -= 0.25
 	}
 	if !catHit {
 		points -= 0.18
@@ -376,22 +387,80 @@ func genderAligned(title, gender string) bool {
 }
 
 func colorMatch(title, color string) bool {
+	return colorMatchStrength(title, color) >= 0.5
+}
+
+// colorMatchStrength returns 0..1. Multi-word colors like "Light Blue" must not
+// match any title that merely contains the word "blue".
+func colorMatchStrength(title, color string) float64 {
 	color = strings.ToLower(strings.TrimSpace(color))
 	if color == "" {
-		return false
+		return 0
 	}
-	// Support compound colors like "White and gray"
+
+	switch {
+	case color == "light blue" || color == "sky blue" || color == "baby blue" || color == "powder blue" || color == "ice blue":
+		if containsPhrase(title, "light blue") || containsPhrase(title, "sky blue") ||
+			containsPhrase(title, "baby blue") || containsPhrase(title, "powder blue") ||
+			containsPhrase(title, "ice blue") || strings.Contains(title, "lightblue") {
+			return 1
+		}
+		// Bare "blue" without navy/dark is a weak hint only.
+		if strings.Contains(title, "navy") || strings.Contains(title, "dark blue") ||
+			strings.Contains(title, "midnight") || strings.Contains(title, "indigo") {
+			return 0
+		}
+		if strings.Contains(title, "blue") {
+			return 0.45
+		}
+		return 0
+	case color == "blue":
+		if strings.Contains(title, "blue") || strings.Contains(title, "navy") {
+			return 1
+		}
+		return 0
+	case color == "navy":
+		if strings.Contains(title, "navy") || containsPhrase(title, "dark blue") {
+			return 1
+		}
+		if strings.Contains(title, "blue") && !strings.Contains(title, "light") {
+			return 0.5
+		}
+		return 0
+	}
+
 	for _, part := range splitColors(color) {
-		if containsAny(title, part) {
-			return true
+		if containsPhrase(title, part) {
+			return 1
 		}
 		for _, syn := range colorSynonyms(part) {
-			if strings.Contains(title, syn) {
-				return true
+			if containsPhrase(title, syn) {
+				return 1
 			}
 		}
 	}
-	return false
+	return 0
+}
+
+func containsPhrase(haystack, needle string) bool {
+	needle = strings.ToLower(strings.TrimSpace(needle))
+	if needle == "" || needle == "other" {
+		return false
+	}
+	if strings.Contains(haystack, needle) {
+		return true
+	}
+	parts := strings.Fields(needle)
+	if len(parts) <= 1 {
+		return false
+	}
+	// All words must appear (order-insensitive) for multi-word colors/labels.
+	for _, p := range parts {
+		if len(p) < 2 || !strings.Contains(haystack, p) {
+			return false
+		}
+	}
+	return true
 }
 
 func splitColors(color string) []string {
@@ -418,12 +487,16 @@ func colorSynonyms(color string) []string {
 	switch strings.ToLower(color) {
 	case "beige", "tan", "khaki", "sand":
 		return []string{"beige", "tan", "khaki", "cream", "sand", "stone"}
-	case "cream", "off-white", "off white", "ivory", "white":
-		return []string{"cream", "ivory", "off white", "off-white", "white"}
+	case "cream", "off-white", "off white", "ivory":
+		return []string{"cream", "ivory", "off white", "off-white"}
+	case "white":
+		return []string{"white", "off white", "off-white", "ivory"}
 	case "black":
-		return []string{"black", "noir", "charcoal"}
-	case "navy", "blue":
-		return []string{"navy", "blue"}
+		return []string{"black", "noir"}
+	case "navy":
+		return []string{"navy", "dark blue", "midnight"}
+	case "blue":
+		return []string{"blue"}
 	case "brown":
 		return []string{"brown", "cognac", "chocolate"}
 	case "grey", "gray":
@@ -434,6 +507,7 @@ func colorSynonyms(color string) []string {
 }
 
 func hasConflictingColor(title, want string) bool {
+	want = strings.ToLower(strings.TrimSpace(want))
 	wantParts := splitColors(want)
 	wantSet := map[string]struct{}{}
 	for _, w := range wantParts {
@@ -441,9 +515,20 @@ func hasConflictingColor(title, want string) bool {
 		for _, s := range colorSynonyms(w) {
 			wantSet[s] = struct{}{}
 		}
+		// "Light Blue" should not treat "blue" as a conflict.
+		for _, token := range strings.Fields(w) {
+			wantSet[token] = struct{}{}
+		}
 	}
 
-	conflicts := []string{"red", "blue", "green", "yellow", "pink", "purple", "orange", "maroon", "burgundy", "dusty pink"}
+	if isLightBlueFamily(want) {
+		if strings.Contains(title, "navy") || strings.Contains(title, "dark blue") ||
+			strings.Contains(title, "midnight") || strings.Contains(title, "indigo") {
+			return true
+		}
+	}
+
+	conflicts := []string{"red", "blue", "green", "yellow", "pink", "purple", "orange", "maroon", "burgundy", "dusty pink", "navy"}
 	for _, c := range conflicts {
 		if _, ok := wantSet[c]; ok {
 			continue
@@ -453,6 +538,12 @@ func hasConflictingColor(title, want string) bool {
 		}
 	}
 	return false
+}
+
+func isLightBlueFamily(color string) bool {
+	c := strings.ToLower(strings.TrimSpace(color))
+	return c == "light blue" || c == "sky blue" || c == "baby blue" ||
+		c == "powder blue" || c == "ice blue"
 }
 
 func materialMatch(title, material string) bool {
@@ -641,6 +732,28 @@ func isGraphicTitle(title string) bool {
 		containsAny(title, "floral") || containsAny(title, "typography") || containsAny(title, "printed")
 }
 
+func isNonSolidPatternTitle(title string) bool {
+	if isGraphicTitle(title) {
+		return true
+	}
+	markers := []string{
+		"checked", "check ", " checks", "plaid", "gingham",
+		"striped", "stripe", "pinstripe",
+		"tie dye", "tie-dye", "tie and dye",
+		"embroider", "embroidered",
+	}
+	for _, m := range markers {
+		if strings.Contains(title, m) {
+			return true
+		}
+	}
+	// "check" as a whole word (Men Blue Checked … already caught; "Check Shirt")
+	if strings.Contains(title, " check") || strings.HasPrefix(title, "check") {
+		return true
+	}
+	return false
+}
+
 func isTShirtTitle(title string) bool {
 	compact := strings.ReplaceAll(title, "-", "")
 	compact = strings.ReplaceAll(compact, " ", "")
@@ -667,16 +780,23 @@ func containsAny(haystack, needle string) bool {
 	if needle == "" || needle == "other" {
 		return false
 	}
+	if strings.Contains(haystack, needle) {
+		return true
+	}
 	parts := strings.Fields(needle)
+	if len(parts) <= 1 {
+		return false
+	}
+	// Multi-word needles require every token (avoids "Light Blue" ≈ any "blue").
 	for _, p := range parts {
 		if len(p) < 2 {
 			continue
 		}
-		if strings.Contains(haystack, p) {
-			return true
+		if !strings.Contains(haystack, p) {
+			return false
 		}
 	}
-	return strings.Contains(haystack, needle)
+	return true
 }
 
 func dedupeKey(p models.Product) string {

@@ -22,6 +22,15 @@ function HomeInner() {
     },
   });
 
+  const analyzeUpload = useMutation({
+    mutationFn: api.analyzeUpload,
+    onSuccess: (data) => {
+      router.push(`/?id=${data.id}`);
+    },
+  });
+
+  const submitting = analyze.isPending || analyzeUpload.isPending;
+
   const result = useQuery({
     queryKey: ["result", id],
     queryFn: () => api.result(id!),
@@ -50,15 +59,25 @@ function HomeInner() {
   const showResult = result.data?.status === "completed";
   const showError =
     analyze.isError ||
+    analyzeUpload.isError ||
     result.isError ||
     result.data?.status === "failed";
 
   const errorMessage = useMemo(() => {
     if (analyze.isError) return (analyze.error as Error).message;
+    if (analyzeUpload.isError) return (analyzeUpload.error as Error).message;
     if (result.isError) return (result.error as Error).message;
     if (result.data?.status === "failed") return result.data.error_message || "Analysis failed";
     return "";
-  }, [analyze.isError, analyze.error, result.isError, result.error, result.data]);
+  }, [
+    analyze.isError,
+    analyze.error,
+    analyzeUpload.isError,
+    analyzeUpload.error,
+    result.isError,
+    result.error,
+    result.data,
+  ]);
 
   return (
     <main>
@@ -80,16 +99,20 @@ function HomeInner() {
           </div>
           <div className="hero-copy">
             <p className="brand-mark">LOOKBOOK</p>
-            <h1>Turn any Pinterest look into a shoppable wardrobe.</h1>
+            <h1>Turn any look into a shoppable wardrobe.</h1>
             <p className="lede">
-              Paste a Pinterest pin URL. We read the outfit, then shop it across
-              Myntra, Snitch, Off Duty, Bewakoof, Westside, and more.
+              Paste a Pinterest pin, or drop a photo / screenshot. We read the
+              outfit, then shop it across Myntra, Snitch, Off Duty, Bewakoof,
+              Westside, and more.
             </p>
             <AnalyzeForm
-              onSubmit={(url) => analyze.mutate(url)}
-              loading={analyze.isPending}
+              onSubmitUrl={(url) => analyze.mutate(url)}
+              onSubmitFile={(file) => analyzeUpload.mutate(file)}
+              loading={submitting}
             />
-            {analyze.isError && <p className="error">{errorMessage}</p>}
+            {(analyze.isError || analyzeUpload.isError) && (
+              <p className="error">{errorMessage}</p>
+            )}
           </div>
         </section>
       )}
@@ -100,10 +123,6 @@ function HomeInner() {
             <Link href="/" className="ghost-link">
               ← New search
             </Link>
-            <AnalyzeForm
-              onSubmit={(url) => analyze.mutate(url)}
-              loading={analyze.isPending}
-            />
           </div>
 
           {showLoading && <LoadingState stage={stage} />}
@@ -111,7 +130,7 @@ function HomeInner() {
             <div className="error-panel">
               <h2>Couldn’t finish this look</h2>
               <p>{errorMessage}</p>
-              <Link href="/">Try another URL</Link>
+              <Link href="/">Try another look</Link>
             </div>
           )}
           {showResult && result.data && <OutfitResult outfit={result.data} />}

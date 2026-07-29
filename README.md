@@ -2,7 +2,9 @@
 
 Paste a Pinterest pin URL → detect the outfit → search multiple Indian retailers → return ranked shoppable matches.
 
-MVP source: **Pinterest only**.
+Also supports **photo upload** (drag-and-drop / screenshot / file picker).
+
+MVP sources: **Pinterest URL** or **uploaded image**.
 
 **Search providers:** Myntra, Ajio, Flipkart, Bewakoof, H&M, Snitch, Veirdo, Westside, Off Duty, Freakins, The Pant Project, The Bear House, Powerlook, Bluorng, Rare Rabbit (+ optional SerpAPI).
 
@@ -46,7 +48,8 @@ Product search hits **live** retailers when they allow the request (Myntra, Ajio
 
 | Method   | Path            | Description                            |
 | -------- | --------------- | -------------------------------------- |
-| `POST`   | `/analyze`      | `{ "url": "..." }` → `{ "id": "..." }` |
+| `POST`   | `/analyze`         | `{ "url": "..." }` → `{ "id": "..." }` |
+| `POST`   | `/analyze/upload`  | multipart `image` file → `{ "id": "..." }` |
 | `GET`    | `/result/{id}`  | Poll analysis status + outfit          |
 | `GET`    | `/history`      | Recent searches                        |
 | `DELETE` | `/history/{id}` | Remove history entry                   |

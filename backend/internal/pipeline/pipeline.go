@@ -33,7 +33,7 @@ func (p *Pipeline) Start(ctx context.Context, outfitID uuid.UUID, sourceURL stri
 	go func() {
 		runCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		if err := p.run(runCtx, outfitID, sourceURL); err != nil {
+		if err := p.runFromURL(runCtx, outfitID, sourceURL); err != nil {
 			p.Log.Error("pipeline failed", "outfit_id", outfitID, "error", err)
 			_ = p.Store.MarkFailed(context.Background(), outfitID, err.Error())
 		}
@@ -41,9 +41,21 @@ func (p *Pipeline) Start(ctx context.Context, outfitID uuid.UUID, sourceURL stri
 	_ = ctx
 }
 
-func (p *Pipeline) run(ctx context.Context, outfitID uuid.UUID, sourceURL string) error {
+// StartUpload analyzes a locally uploaded image (screenshot / photo).
+func (p *Pipeline) StartUpload(ctx context.Context, outfitID uuid.UUID, data []byte, contentType, sourceLabel string) {
+	go func() {
+		runCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		if err := p.runFromBytes(runCtx, outfitID, data, contentType, sourceLabel); err != nil {
+			p.Log.Error("pipeline failed", "outfit_id", outfitID, "error", err)
+			_ = p.Store.MarkFailed(context.Background(), outfitID, err.Error())
+		}
+	}()
+	_ = ctx
+}
+
+func (p *Pipeline) runFromURL(ctx context.Context, outfitID uuid.UUID, sourceURL string) error {
 	log := p.Log.With("outfit_id", outfitID)
-	start := time.Now()
 
 	if err := p.Store.MarkProcessing(ctx, outfitID); err != nil {
 		return err
@@ -61,7 +73,24 @@ func (p *Pipeline) run(ctx context.Context, outfitID uuid.UUID, sourceURL string
 		return fmt.Errorf("download image: %w", err)
 	}
 
-	rel, err := p.Storage.Save(dl.Data, dl.ContentType)
+	return p.finishFromImage(ctx, outfitID, sourceURL, dl.Data, dl.ContentType)
+}
+
+func (p *Pipeline) runFromBytes(ctx context.Context, outfitID uuid.UUID, data []byte, contentType, sourceLabel string) error {
+	if err := p.Store.MarkProcessing(ctx, outfitID); err != nil {
+		return err
+	}
+	if sourceLabel == "" {
+		sourceLabel = "upload"
+	}
+	return p.finishFromImage(ctx, outfitID, sourceLabel, data, contentType)
+}
+
+func (p *Pipeline) finishFromImage(ctx context.Context, outfitID uuid.UUID, sourceURL string, data []byte, contentType string) error {
+	log := p.Log.With("outfit_id", outfitID)
+	start := time.Now()
+
+	rel, err := p.Storage.Save(data, contentType)
 	if err != nil {
 		return fmt.Errorf("save image: %w", err)
 	}

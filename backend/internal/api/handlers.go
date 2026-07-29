@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,6 +49,7 @@ func (s *Server) Router() http.Handler {
 	r.Handle("/images/*", http.StripPrefix("/images/", s.Images))
 
 	r.Post("/analyze", s.handleAnalyze)
+	r.Post("/analyze/upload", s.handleAnalyzeUpload)
 	r.Get("/result/{id}", s.handleResult)
 	r.Get("/history", s.handleHistory)
 	r.Delete("/history/{id}", s.handleDeleteHistory)
@@ -94,6 +97,72 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 
 	s.Pipeline.Start(r.Context(), outfit.ID, req.URL)
 	writeJSON(w, http.StatusAccepted, map[string]string{"id": outfit.ID.String()})
+}
+
+const maxUploadBytes = 12 << 20 // 12 MB
+
+func (s *Server) handleAnalyzeUpload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+1024)
+	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
+		writeError(w, http.StatusBadRequest, "image too large or invalid multipart form (max 12MB)")
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "missing image file (field name: image)")
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxUploadBytes+1))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "failed to read image")
+		return
+	}
+	if len(data) == 0 {
+		writeError(w, http.StatusBadRequest, "empty image file")
+		return
+	}
+	if len(data) > maxUploadBytes {
+		writeError(w, http.StatusBadRequest, "image too large (max 12MB)")
+		return
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" || contentType == "application/octet-stream" {
+		contentType = http.DetectContentType(data)
+	}
+	if !isAllowedImageType(contentType) {
+		writeError(w, http.StatusBadRequest, "unsupported image type (use JPEG, PNG, WebP, or GIF)")
+		return
+	}
+
+	filename := filepath.Base(header.Filename)
+	if filename == "." || filename == "" {
+		filename = "photo"
+	}
+	sourceLabel := "upload:" + filename
+
+	outfit, err := s.Store.CreateOutfit(r.Context(), sourceLabel)
+	if err != nil {
+		s.Log.Error("create outfit", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to create analysis job")
+		return
+	}
+
+	s.Pipeline.StartUpload(r.Context(), outfit.ID, data, contentType, sourceLabel)
+	writeJSON(w, http.StatusAccepted, map[string]string{"id": outfit.ID.String()})
+}
+
+func isAllowedImageType(ct string) bool {
+	ct = strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
+	switch ct {
+	case "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Server) handleResult(w http.ResponseWriter, r *http.Request) {

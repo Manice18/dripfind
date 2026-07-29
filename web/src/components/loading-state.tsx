@@ -13,7 +13,9 @@ export function LoadingState({ stage = 0 }: { stage?: number }) {
 
   return (
     <section className="loading-panel" aria-live="polite">
-      <div className="loading-orbit" aria-hidden />
+      <div className="loading-orbit-wrap" aria-hidden>
+        <div className="loading-orbit" />
+      </div>
       <p className="eyebrow">Working</p>
       <h2>{STAGES[active]}</h2>
       <ol className="stage-list">
