@@ -34,8 +34,8 @@ export function SiteHeader({ variant = "landing" }: { variant?: HeaderVariant })
           </>
         )}
         {loading && (
-          <span className="nav-status" role="status">
-            Checking session…
+          <span className="nav-status" role="status" aria-label="Checking session">
+            <span className="nav-status-spinner" aria-hidden="true" />
           </span>
         )}
         {!loading && !user && variant !== "auth" && (

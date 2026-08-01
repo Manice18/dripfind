@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { SessionLoader } from "@/components/session-loader";
 import { SiteHeader } from "@/components/site-header";
 import { api, googleAuthURL } from "@/lib/api";
 
@@ -68,13 +69,7 @@ function AuthInner() {
   }
 
   if (authLoading || user) {
-    return (
-      <main className="auth-page landing-gate" aria-busy="true">
-        <p className="muted" role="status">
-          {user ? "Opening your LOOKBOOK…" : "Loading…"}
-        </p>
-      </main>
-    );
+    return <SessionLoader />;
   }
 
   return (
@@ -175,15 +170,7 @@ function AuthInner() {
 
 export default function AuthPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="auth-page landing-gate">
-          <p className="muted" role="status">
-            Loading…
-          </p>
-        </main>
-      }
-    >
+    <Suspense fallback={<SessionLoader />}>
       <AuthInner />
     </Suspense>
   );

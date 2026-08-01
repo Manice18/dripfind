@@ -11,6 +11,7 @@ import { LoadingState } from "@/components/loading-state";
 import { OutfitResult } from "@/components/outfit-result";
 import { SiteHeader } from "@/components/site-header";
 import { api } from "@/lib/api";
+import { SessionLoader } from "@/components/session-loader";
 
 function AppInner() {
   const router = useRouter();
@@ -90,11 +91,7 @@ function AppInner() {
   ]);
 
   if (authLoading || !user) {
-    return (
-      <main className="workspace">
-        <p className="muted">Checking session…</p>
-      </main>
-    );
+    return <SessionLoader />;
   }
 
   return (
@@ -149,7 +146,7 @@ function AppInner() {
 
 export default function AppPage() {
   return (
-    <Suspense fallback={<main className="workspace"><p className="muted">Loading…</p></main>}>
+    <Suspense fallback={<SessionLoader />}>
       <AppInner />
     </Suspense>
   );

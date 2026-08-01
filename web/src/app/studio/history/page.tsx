@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { HistoryList } from "@/components/history-list";
+import { SessionLoader } from "@/components/session-loader";
 import { SiteHeader } from "@/components/site-header";
 
 export default function HistoryPage() {
@@ -17,11 +18,7 @@ export default function HistoryPage() {
   }, [loading, user, router]);
 
   if (loading || !user) {
-    return (
-      <main className="workspace">
-        <p className="muted">Checking session…</p>
-      </main>
-    );
+    return <SessionLoader />;
   }
 
   return (

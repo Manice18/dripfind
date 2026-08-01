@@ -1092,6 +1092,40 @@ html.js-landing-motion .site-header-landing {
   text-align: center;
 }
 
+.session-loader {
+  min-height: 100dvh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.session-loader-inner {
+  display: grid;
+  justify-items: center;
+  gap: 1.15rem;
+}
+
+.session-spinner {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 2px solid rgba(214, 255, 75, 0.22);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+.session-loader-label {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  color: var(--bone);
+}
+
 .site-nav {
   display: flex;
   align-items: center;
@@ -1185,6 +1219,23 @@ html.js-landing-motion .site-header-landing {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+.nav-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+}
+
+.nav-status-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid rgba(214, 255, 75, 0.25);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .nav-icon-btn {
@@ -2061,6 +2112,8 @@ html.js-landing-motion .landing-cta.is-visible::before {
   .hero-grain,
   .hero-photo-img,
   .loading-orbit,
+  .session-spinner,
+  .nav-status-spinner,
   .landing-section,
   .hero-copy,
   .auth-panel,
@@ -2069,6 +2122,12 @@ html.js-landing-motion .landing-cta.is-visible::before {
   .workspace,
   .loading-panel {
     animation: none !important;
+  }
+
+  .session-spinner,
+  .nav-status-spinner {
+    border-top-color: var(--lime);
+    opacity: 0.85;
   }
 
   .hero-photo,

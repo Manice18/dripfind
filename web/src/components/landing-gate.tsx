@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { SessionLoader } from "@/components/session-loader";
 
 export function LandingGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -15,13 +16,7 @@ export function LandingGate({ children }: { children: ReactNode }) {
   }, [loading, user, router]);
 
   if (loading || user) {
-    return (
-      <main className="landing landing-gate" aria-busy="true">
-        <p className="muted" role="status">
-          {user ? "Opening your LOOKBOOK…" : "Loading LOOKBOOK…"}
-        </p>
-      </main>
-    );
+    return <SessionLoader />;
   }
 
   return <>{children}</>;

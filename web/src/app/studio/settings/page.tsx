@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { IconLogout } from "@/components/icons";
+import { SessionLoader } from "@/components/session-loader";
 import { SiteHeader } from "@/components/site-header";
 
 export default function SettingsPage() {
@@ -17,11 +18,7 @@ export default function SettingsPage() {
   }, [loading, user, router]);
 
   if (loading || !user) {
-    return (
-      <main className="workspace">
-        <p className="muted">Checking session…</p>
-      </main>
-    );
+    return <SessionLoader />;
   }
 
   const displayName = user.name || "Account";
