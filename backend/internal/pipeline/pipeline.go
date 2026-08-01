@@ -29,32 +29,8 @@ type Pipeline struct {
 	Log       *slog.Logger
 }
 
-func (p *Pipeline) Start(ctx context.Context, outfitID uuid.UUID, sourceURL string) {
-	go func() {
-		runCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		defer cancel()
-		if err := p.runFromURL(runCtx, outfitID, sourceURL); err != nil {
-			p.Log.Error("pipeline failed", "outfit_id", outfitID, "error", err)
-			_ = p.Store.MarkFailed(context.Background(), outfitID, err.Error())
-		}
-	}()
-	_ = ctx
-}
-
-// StartUpload analyzes a locally uploaded image (screenshot / photo).
-func (p *Pipeline) StartUpload(ctx context.Context, outfitID uuid.UUID, data []byte, contentType, sourceLabel string) {
-	go func() {
-		runCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-		defer cancel()
-		if err := p.runFromBytes(runCtx, outfitID, data, contentType, sourceLabel); err != nil {
-			p.Log.Error("pipeline failed", "outfit_id", outfitID, "error", err)
-			_ = p.Store.MarkFailed(context.Background(), outfitID, err.Error())
-		}
-	}()
-	_ = ctx
-}
-
-func (p *Pipeline) runFromURL(ctx context.Context, outfitID uuid.UUID, sourceURL string) error {
+// RunURL extracts and analyzes a Pinterest (or similar) URL. Called by the worker.
+func (p *Pipeline) RunURL(ctx context.Context, outfitID uuid.UUID, sourceURL string) error {
 	log := p.Log.With("outfit_id", outfitID)
 
 	if err := p.Store.MarkProcessing(ctx, outfitID); err != nil {
@@ -76,26 +52,31 @@ func (p *Pipeline) runFromURL(ctx context.Context, outfitID uuid.UUID, sourceURL
 	return p.finishFromImage(ctx, outfitID, sourceURL, dl.Data, dl.ContentType)
 }
 
-func (p *Pipeline) runFromBytes(ctx context.Context, outfitID uuid.UUID, data []byte, contentType, sourceLabel string) error {
+// RunUpload analyzes an image already written to storage (key in the job payload).
+func (p *Pipeline) RunUpload(ctx context.Context, outfitID uuid.UUID, imageKey, sourceLabel string) error {
 	if err := p.Store.MarkProcessing(ctx, outfitID); err != nil {
 		return err
 	}
 	if sourceLabel == "" {
 		sourceLabel = "upload"
 	}
-	return p.finishFromImage(ctx, outfitID, sourceLabel, data, contentType)
+	return p.finishFromStored(ctx, outfitID, sourceLabel, imageKey)
 }
 
 func (p *Pipeline) finishFromImage(ctx context.Context, outfitID uuid.UUID, sourceURL string, data []byte, contentType string) error {
-	log := p.Log.With("outfit_id", outfitID)
-	start := time.Now()
-
 	rel, err := p.Storage.Save(data, contentType)
 	if err != nil {
 		return fmt.Errorf("save image: %w", err)
 	}
+	return p.finishFromStored(ctx, outfitID, sourceURL, rel)
+}
+
+func (p *Pipeline) finishFromStored(ctx context.Context, outfitID uuid.UUID, sourceURL, rel string) error {
+	log := p.Log.With("outfit_id", outfitID)
+	start := time.Now()
+
 	abs := p.Storage.AbsPath(rel)
-	log.Info("image saved", "path", rel)
+	log.Info("image ready", "path", rel)
 
 	visionStart := time.Now()
 	analyzed, err := p.Vision.Analyze(ctx, abs)

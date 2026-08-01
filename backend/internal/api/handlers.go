@@ -15,18 +15,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/manice18/outfit_finder/backend/internal/auth"
 	"github.com/manice18/outfit_finder/backend/internal/history"
+	"github.com/manice18/outfit_finder/backend/internal/jobs"
 	"github.com/manice18/outfit_finder/backend/internal/models"
 	"github.com/manice18/outfit_finder/backend/internal/pinterest"
-	"github.com/manice18/outfit_finder/backend/internal/pipeline"
+	"github.com/manice18/outfit_finder/backend/internal/storage"
 )
 
 type Server struct {
-	Store    *history.Store
-	Pipeline *pipeline.Pipeline
-	Auth     *auth.Service
-	Log      *slog.Logger
-	Origins  []string
-	Images   http.Handler
+	Store          *history.Store
+	Jobs           *jobs.Store
+	Storage        storage.ImageStorage
+	Auth           *auth.Service
+	Log            *slog.Logger
+	Origins        []string
+	Images         http.Handler
+	JobMaxAttempts int
 }
 
 func (s *Server) Router() http.Handler {
@@ -108,7 +111,18 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.Pipeline.Start(r.Context(), outfit.ID, req.URL)
+	if _, err := s.Jobs.Enqueue(r.Context(), jobs.EnqueueParams{
+		OutfitID:    outfit.ID,
+		Kind:        jobs.KindURL,
+		Payload:     jobs.URLPayload{URL: req.URL},
+		MaxAttempts: s.JobMaxAttempts,
+	}); err != nil {
+		s.Log.Error("enqueue job", "error", err, "outfit_id", outfit.ID)
+		_ = s.Store.MarkFailed(r.Context(), outfit.ID, "failed to enqueue analysis")
+		writeError(w, http.StatusInternalServerError, "failed to enqueue analysis job")
+		return
+	}
+
 	writeJSON(w, http.StatusAccepted, map[string]string{"id": outfit.ID.String()})
 }
 
@@ -163,6 +177,15 @@ func (s *Server) handleAnalyzeUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	sourceLabel := "upload:" + filename
 
+	// Persist bytes before enqueue so the payload only holds a storage key
+	// (Phase 4 will swap local storage for object storage without changing jobs).
+	imageKey, err := s.Storage.Save(data, contentType)
+	if err != nil {
+		s.Log.Error("save upload", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to store image")
+		return
+	}
+
 	outfit, err := s.Store.CreateOutfit(r.Context(), userID, sourceLabel)
 	if err != nil {
 		s.Log.Error("create outfit", "error", err)
@@ -170,7 +193,22 @@ func (s *Server) handleAnalyzeUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.Pipeline.StartUpload(r.Context(), outfit.ID, data, contentType, sourceLabel)
+	if _, err := s.Jobs.Enqueue(r.Context(), jobs.EnqueueParams{
+		OutfitID: outfit.ID,
+		Kind:     jobs.KindUpload,
+		Payload: jobs.UploadPayload{
+			ImageKey:    imageKey,
+			ContentType: contentType,
+			SourceLabel: sourceLabel,
+		},
+		MaxAttempts: s.JobMaxAttempts,
+	}); err != nil {
+		s.Log.Error("enqueue job", "error", err, "outfit_id", outfit.ID)
+		_ = s.Store.MarkFailed(r.Context(), outfit.ID, "failed to enqueue analysis")
+		writeError(w, http.StatusInternalServerError, "failed to enqueue analysis job")
+		return
+	}
+
 	writeJSON(w, http.StatusAccepted, map[string]string{"id": outfit.ID.String()})
 }
 

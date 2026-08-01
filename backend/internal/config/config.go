@@ -28,6 +28,8 @@ type Config struct {
 	SMTPUser           string
 	SMTPPassword       string
 	SMTPFrom           string
+	WorkerConcurrency  int
+	JobMaxAttempts     int
 }
 
 func Load() (*Config, error) {
@@ -69,6 +71,8 @@ func Load() (*Config, error) {
 		SMTPUser:           os.Getenv("SMTP_USER"),
 		SMTPPassword:       os.Getenv("SMTP_PASSWORD"),
 		SMTPFrom:           getEnv("SMTP_FROM", "LOOKBOOK <noreply@lookbook.local>"),
+		WorkerConcurrency:  getEnvInt("WORKER_CONCURRENCY", 4),
+		JobMaxAttempts:     getEnvInt("JOB_MAX_ATTEMPTS", 3),
 	}
 
 	if cfg.OpenAIAPIKey == "" {
@@ -95,4 +99,16 @@ func getEnvBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return b
+}
+
+func getEnvInt(key string, fallback int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return n
 }

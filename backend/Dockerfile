@@ -15,6 +15,7 @@ COPY . .
 # stage be plain Alpine with no Go toolchain or libc shims.
 # -s -w strips the symbol table and DWARF debug info.
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/worker ./cmd/worker
 
 # ---------- runtime ----------
 FROM alpine:3.20
@@ -28,6 +29,7 @@ RUN apk add --no-cache ca-certificates tzdata wget \
 
 WORKDIR /app
 COPY --from=build /out/api /app/api
+COPY --from=build /out/worker /app/worker
 
 # REQUIRED: main.go's findMigrations() resolves ./migrations relative to the
 # working directory. Without this the API exits at boot with a migrate error.

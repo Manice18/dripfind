@@ -1,0 +1,119 @@
+package main
+
+import (
+	"context"
+	"log/slog"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+
+	"github.com/joho/godotenv"
+	"github.com/manice18/outfit_finder/backend/internal/config"
+	"github.com/manice18/outfit_finder/backend/internal/database"
+	"github.com/manice18/outfit_finder/backend/internal/history"
+	imagedl "github.com/manice18/outfit_finder/backend/internal/image"
+	"github.com/manice18/outfit_finder/backend/internal/jobs"
+	"github.com/manice18/outfit_finder/backend/internal/pinterest"
+	"github.com/manice18/outfit_finder/backend/internal/pipeline"
+	"github.com/manice18/outfit_finder/backend/internal/ranking"
+	"github.com/manice18/outfit_finder/backend/internal/search"
+	"github.com/manice18/outfit_finder/backend/internal/storage"
+	"github.com/manice18/outfit_finder/backend/internal/vision"
+)
+
+func main() {
+	_ = godotenv.Load()
+	_ = godotenv.Load("../.env")
+
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("config", "error", err)
+		os.Exit(1)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	// Connect with a fresh context so a stray signal during boot can't cancel the ping.
+	pool, err := database.Connect(context.Background(), cfg.PostgresDSN)
+	if err != nil {
+		log.Error("database", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	// Schema is owned by the API process; workers only consume jobs.
+	imagesDir := cfg.ImagesDir
+	if !filepath.IsAbs(imagesDir) {
+		imagesDir = filepath.Join(findBackendRoot(), imagesDir)
+	}
+	localStore, err := storage.NewLocalStorage(imagesDir)
+	if err != nil {
+		log.Error("storage", "error", err)
+		os.Exit(1)
+	}
+
+	var analyzer vision.Analyzer
+	if cfg.DemoMode || cfg.OpenAIAPIKey == "" {
+		log.Warn("running in demo vision mode (set OPENAI_API_KEY for real analysis)")
+		analyzer = vision.NewDemoAnalyzer()
+	} else {
+		analyzer = vision.NewOpenAIAnalyzer(cfg.OpenAIAPIKey, cfg.OpenAIModel)
+	}
+
+	providers := []search.Provider{
+		search.NewMyntraProvider(),
+		search.NewAjioProvider(),
+		search.NewFlipkartProvider(),
+		search.NewBewakoofProvider(),
+		search.NewHMProvider(),
+	}
+	providers = append(providers, search.HomegrownShopifyBrands()...)
+	log.Info("search providers registered", "count", len(providers))
+	if cfg.SerpAPIKey != "" {
+		providers = append(providers, search.NewSerpShoppingProvider(cfg.SerpAPIKey))
+		log.Info("serp shopping provider enabled")
+	}
+
+	outfitStore := history.NewStore(pool)
+	pipe := &pipeline.Pipeline{
+		Store:     outfitStore,
+		Extractor: pinterest.NewExtractor(),
+		Download:  imagedl.NewDownloader(),
+		Storage:   localStore,
+		Vision:    analyzer,
+		Search:    search.NewEngine(log, providers...),
+		Ranker:    ranking.NewScoreRanker(),
+		Log:       log,
+	}
+
+	worker := &jobs.Worker{
+		Jobs:        jobs.NewStore(pool, cfg.JobMaxAttempts),
+		Outfits:     outfitStore,
+		Pipeline:    pipe,
+		Log:         log,
+		Concurrency: cfg.WorkerConcurrency,
+	}
+
+	log.Info("worker process ready",
+		"concurrency", cfg.WorkerConcurrency,
+		"job_max_attempts", cfg.JobMaxAttempts,
+		"demo_mode", cfg.DemoMode,
+	)
+	worker.Run(ctx)
+}
+
+func findBackendRoot() string {
+	candidates := []string{".", "..", filepath.Join("..", "backend")}
+	for _, c := range candidates {
+		if st, err := os.Stat(filepath.Join(c, "migrations")); err == nil && st.IsDir() {
+			abs, _ := filepath.Abs(c)
+			return abs
+		}
+	}
+	abs, _ := filepath.Abs(".")
+	return abs
+}

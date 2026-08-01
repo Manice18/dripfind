@@ -16,13 +16,8 @@ import (
 	"github.com/manice18/outfit_finder/backend/internal/config"
 	"github.com/manice18/outfit_finder/backend/internal/database"
 	"github.com/manice18/outfit_finder/backend/internal/history"
-	imagedl "github.com/manice18/outfit_finder/backend/internal/image"
-	"github.com/manice18/outfit_finder/backend/internal/pinterest"
-	"github.com/manice18/outfit_finder/backend/internal/pipeline"
-	"github.com/manice18/outfit_finder/backend/internal/ranking"
-	"github.com/manice18/outfit_finder/backend/internal/search"
+	"github.com/manice18/outfit_finder/backend/internal/jobs"
 	"github.com/manice18/outfit_finder/backend/internal/storage"
-	"github.com/manice18/outfit_finder/backend/internal/vision"
 )
 
 func main() {
@@ -64,40 +59,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	var analyzer vision.Analyzer
-	if cfg.DemoMode || cfg.OpenAIAPIKey == "" {
-		log.Warn("running in demo vision mode (set OPENAI_API_KEY for real analysis)")
-		analyzer = vision.NewDemoAnalyzer()
-	} else {
-		analyzer = vision.NewOpenAIAnalyzer(cfg.OpenAIAPIKey, cfg.OpenAIModel)
-	}
-
-	providers := []search.Provider{
-		search.NewMyntraProvider(),
-		search.NewAjioProvider(),
-		search.NewFlipkartProvider(),
-		search.NewBewakoofProvider(),
-		search.NewHMProvider(),
-	}
-	providers = append(providers, search.HomegrownShopifyBrands()...)
-	log.Info("search providers registered", "count", len(providers))
-	if cfg.SerpAPIKey != "" {
-		providers = append(providers, search.NewSerpShoppingProvider(cfg.SerpAPIKey))
-		log.Info("serp shopping provider enabled")
-	}
-
-	store := history.NewStore(pool)
-	pipe := &pipeline.Pipeline{
-		Store:     store,
-		Extractor: pinterest.NewExtractor(),
-		Download:  imagedl.NewDownloader(),
-		Storage:   localStore,
-		Vision:    analyzer,
-		Search:    search.NewEngine(log, providers...),
-		Ranker:    ranking.NewScoreRanker(),
-		Log:       log,
-	}
-
 	var mailer auth.Mailer = auth.LogMailer{Log: log}
 	if cfg.SMTPHost != "" {
 		mailer = auth.SMTPMailer{
@@ -123,12 +84,14 @@ func main() {
 	}
 
 	srv := &api.Server{
-		Store:    store,
-		Pipeline: pipe,
-		Auth:     authSvc,
-		Log:      log,
-		Origins:  cfg.CORSOrigins,
-		Images:   http.FileServer(http.Dir(imagesDir)),
+		Store:          history.NewStore(pool),
+		Jobs:           jobs.NewStore(pool, cfg.JobMaxAttempts),
+		Storage:        localStore,
+		Auth:           authSvc,
+		Log:            log,
+		Origins:        cfg.CORSOrigins,
+		Images:         http.FileServer(http.Dir(imagesDir)),
+		JobMaxAttempts: cfg.JobMaxAttempts,
 	}
 
 	httpServer := &http.Server{
