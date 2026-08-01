@@ -1336,13 +1336,138 @@ html.js-landing-motion .site-header-landing {
 }
 
 .settings-logout {
-  margin-top: 1.75rem;
+  margin-top: 0;
   gap: 0.55rem;
   border-radius: var(--radius);
 }
 
 .settings-logout svg {
   display: block;
+}
+
+.settings-actions {
+  margin-top: 1.75rem;
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  width: 100%;
+}
+
+.settings-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.settings-delete {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.settings-delete:hover:not(:disabled),
+.settings-delete:focus-visible {
+  color: var(--danger);
+  border-color: var(--danger);
+  filter: none;
+}
+
+.settings-delete-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: calc(100vw - 2rem);
+  width: min(28rem, 100%);
+}
+
+.settings-delete-dialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 72%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.settings-delete-dialog-panel {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.25rem 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--radius);
+  background: var(--ink-2);
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 55%, transparent);
+}
+
+.settings-delete-title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--danger);
+}
+
+.settings-delete-dialog-panel p,
+.settings-delete-dialog-panel li {
+  margin: 0;
+  color: var(--bone);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.settings-delete-dialog-panel ul {
+  margin: 0.55rem 0 0;
+  padding-inline-start: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.settings-delete-dialog-panel strong {
+  color: var(--bone);
+  font-weight: 700;
+}
+
+.settings-delete-irreversible {
+  margin-top: 0.75rem !important;
+  color: color-mix(in srgb, var(--danger) 75%, var(--bone)) !important;
+  font-weight: 600;
+}
+
+.settings-delete-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.danger-cta {
+  min-height: var(--touch-min);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--danger);
+  color: #140806;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0 1.1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.2s ease;
+}
+
+.danger-cta:hover:not(:disabled),
+.danger-cta:focus-visible {
+  filter: brightness(1.06);
+}
+
+.danger-cta:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.danger-cta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .landing-hero .hero-actions {

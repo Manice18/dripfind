@@ -17,6 +17,7 @@ type AuthContextValue = {
   refresh: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -61,9 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await api.deleteAccount();
+    setUser(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, loading, refresh, setUser, logout }),
-    [user, loading, refresh, logout]
+    () => ({ user, loading, refresh, setUser, logout, deleteAccount }),
+    [user, loading, refresh, logout, deleteAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

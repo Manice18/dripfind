@@ -83,6 +83,10 @@ func (s *Service) Logout(ctx context.Context, rawToken string) error {
 	return s.Store.DeleteSessionByToken(ctx, HashToken(rawToken))
 }
 
+func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID) error {
+	return s.Store.DeleteUser(ctx, userID)
+}
+
 func (s *Service) UserFromSession(ctx context.Context, rawToken string) (*User, error) {
 	if rawToken == "" {
 		return nil, ErrNotFound

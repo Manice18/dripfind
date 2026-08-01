@@ -230,6 +230,38 @@ func (s *Store) DeleteOTP(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+// DeleteUser removes the user and relies on FK CASCADE for sessions, outfits,
+// history, clothing_items, and product_matches. OTP rows (keyed by email) are
+// cleared explicitly.
+func (s *Store) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var email string
+	err = tx.QueryRow(ctx, `SELECT email FROM users WHERE id=$1`, id).Scan(&email)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, `DELETE FROM email_otps WHERE email=$1`, email); err != nil {
+		return err
+	}
+	ct, err := tx.Exec(ctx, `DELETE FROM users WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return tx.Commit(ctx)
+}
+
 func (s *Store) FindOrCreateByEmail(ctx context.Context, email string) (*User, error) {
 	email = normalizeEmail(email)
 	u, _, err := s.FindByEmail(ctx, email)

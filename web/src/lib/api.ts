@@ -61,6 +61,11 @@ export const api = {
       body: JSON.stringify({}),
     }),
 
+  deleteAccount: () =>
+    request<{ status: string }>("/auth/account", {
+      method: "DELETE",
+    }),
+
   requestOTP: (email: string) =>
     request<{ status: string; message: string }>("/auth/otp/request", {
       method: "POST",

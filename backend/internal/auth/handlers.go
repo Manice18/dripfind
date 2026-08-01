@@ -35,6 +35,7 @@ func (s *Service) Routes(r chi.Router) {
 	r.Post("/auth/login", s.handleLogin)
 	r.Post("/auth/logout", s.handleLogout)
 	r.Get("/auth/me", s.handleMe)
+	r.Delete("/auth/account", s.handleDeleteAccount)
 	r.Post("/auth/otp/request", s.handleOTPRequest)
 	r.Post("/auth/otp/verify", s.handleOTPVerify)
 	r.Get("/auth/google", s.handleGoogleStart)
@@ -89,6 +90,21 @@ func (s *Service) handleMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"user": user})
+}
+
+func (s *Service) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+	user, err := s.userFromRequest(r)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	if err := s.DeleteAccount(r.Context(), user.ID); err != nil {
+		s.Log.Error("delete account", "error", err, "user_id", user.ID)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to delete account"})
+		return
+	}
+	s.clearSessionCookie(w)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func (s *Service) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
