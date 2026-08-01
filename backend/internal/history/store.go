@@ -17,13 +17,13 @@ func NewStore(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
 }
 
-func (s *Store) CreateOutfit(ctx context.Context, sourceURL string) (*models.Outfit, error) {
+func (s *Store) CreateOutfit(ctx context.Context, userID uuid.UUID, sourceURL string) (*models.Outfit, error) {
 	var o models.Outfit
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO outfits (source_url, status)
-		VALUES ($1, $2)
+		INSERT INTO outfits (source_url, status, user_id)
+		VALUES ($1, $2, $3)
 		RETURNING id, image_path, source_url, style, gender, season, occasion, status, error_message, created_at, updated_at
-	`, sourceURL, models.StatusPending).Scan(
+	`, sourceURL, models.StatusPending, userID).Scan(
 		&o.ID, &o.ImagePath, &o.SourceURL, &o.Style, &o.Gender, &o.Season, &o.Occasion,
 		&o.Status, &o.ErrorMessage, &o.CreatedAt, &o.UpdatedAt,
 	)
@@ -89,7 +89,8 @@ func (s *Store) SaveAnalysis(ctx context.Context, outfit *models.Outfit) error {
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO history (outfit_id, source_url) VALUES ($1, $2)
+		INSERT INTO history (outfit_id, source_url, user_id)
+		SELECT $1, $2, user_id FROM outfits WHERE id=$1
 	`, outfit.ID, outfit.SourceURL)
 	if err != nil {
 		return err
@@ -98,12 +99,12 @@ func (s *Store) SaveAnalysis(ctx context.Context, outfit *models.Outfit) error {
 	return tx.Commit(ctx)
 }
 
-func (s *Store) GetOutfit(ctx context.Context, id uuid.UUID) (*models.Outfit, error) {
+func (s *Store) GetOutfit(ctx context.Context, id, userID uuid.UUID) (*models.Outfit, error) {
 	var o models.Outfit
 	err := s.pool.QueryRow(ctx, `
 		SELECT id, image_path, source_url, style, gender, season, occasion, status, error_message, created_at, updated_at
-		FROM outfits WHERE id=$1
-	`, id).Scan(
+		FROM outfits WHERE id=$1 AND user_id=$2
+	`, id, userID).Scan(
 		&o.ID, &o.ImagePath, &o.SourceURL, &o.Style, &o.Gender, &o.Season, &o.Occasion,
 		&o.Status, &o.ErrorMessage, &o.CreatedAt, &o.UpdatedAt,
 	)
@@ -154,7 +155,7 @@ func (s *Store) GetOutfit(ctx context.Context, id uuid.UUID) (*models.Outfit, er
 	return &o, itemRows.Err()
 }
 
-func (s *Store) ListHistory(ctx context.Context, limit int) ([]models.HistoryEntry, error) {
+func (s *Store) ListHistory(ctx context.Context, userID uuid.UUID, limit int) ([]models.HistoryEntry, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 30
 	}
@@ -163,9 +164,10 @@ func (s *Store) ListHistory(ctx context.Context, limit int) ([]models.HistoryEnt
 		       o.style, o.gender, o.status, o.image_path
 		FROM history h
 		JOIN outfits o ON o.id = h.outfit_id
+		WHERE h.user_id=$1
 		ORDER BY h.created_at DESC
-		LIMIT $1
-	`, limit)
+		LIMIT $2
+	`, userID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -186,8 +188,8 @@ func (s *Store) ListHistory(ctx context.Context, limit int) ([]models.HistoryEnt
 	return out, rows.Err()
 }
 
-func (s *Store) DeleteHistory(ctx context.Context, id uuid.UUID) error {
-	ct, err := s.pool.Exec(ctx, `DELETE FROM history WHERE id=$1`, id)
+func (s *Store) DeleteHistory(ctx context.Context, id, userID uuid.UUID) error {
+	ct, err := s.pool.Exec(ctx, `DELETE FROM history WHERE id=$1 AND user_id=$2`, id, userID)
 	if err != nil {
 		return err
 	}

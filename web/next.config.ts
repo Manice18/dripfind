@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emits a self-contained server bundle with only the node_modules files Next
+  // traces as reachable. Required by web/Dockerfile; shrinks the image ~85%.
+  output: "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },

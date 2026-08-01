@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+
+# Never let secrets into a build layer
+.env
+.env.*
+
+*.log
+tsconfig.tsbuildinfo
+.DS_Store

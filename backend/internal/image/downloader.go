@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/manice18/outfit_finder/backend/internal/safehttp"
 )
 
 type Downloader struct {
@@ -15,7 +17,8 @@ type Downloader struct {
 func NewDownloader() *Downloader {
 	return &Downloader{
 		client: &http.Client{
-			Timeout: 45 * time.Second,
+			Timeout:   45 * time.Second,
+			Transport: safehttp.Transport(),
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) >= 10 {
 					return fmt.Errorf("too many redirects")
@@ -58,31 +61,20 @@ func (d *Downloader) Download(imageURL string) (*DownloadResult, error) {
 	}
 
 	ct := resp.Header.Get("Content-Type")
-	if ct == "" {
+	if ct == "" || !isAllowedImageType(ct) {
 		ct = http.DetectContentType(data)
 	}
-	if !strings.HasPrefix(ct, "image/") && !looksLikeImage(data) {
-		return nil, fmt.Errorf("url did not return an image (content-type=%s)", ct)
-	}
-	if !strings.HasPrefix(ct, "image/") {
-		ct = http.DetectContentType(data)
+	if !isAllowedImageType(ct) {
+		return nil, fmt.Errorf("url did not return an allowed image type (content-type=%s)", ct)
 	}
 
 	return &DownloadResult{Data: data, ContentType: ct}, nil
 }
 
-func looksLikeImage(data []byte) bool {
-	if len(data) < 4 {
-		return false
-	}
-	switch {
-	case data[0] == 0xFF && data[1] == 0xD8:
-		return true
-	case data[0] == 0x89 && data[1] == 0x50:
-		return true
-	case data[0] == 'G' && data[1] == 'I' && data[2] == 'F':
-		return true
-	case data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F':
+func isAllowedImageType(ct string) bool {
+	ct = strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
+	switch ct {
+	case "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif":
 		return true
 	default:
 		return false

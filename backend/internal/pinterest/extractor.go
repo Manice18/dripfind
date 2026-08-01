@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/manice18/outfit_finder/backend/internal/safehttp"
 )
 
 var (
@@ -24,7 +26,8 @@ type Extractor struct {
 func NewExtractor() *Extractor {
 	return &Extractor{
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: safehttp.Transport(),
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) >= 10 {
 					return fmt.Errorf("too many redirects")
@@ -54,16 +57,19 @@ func IsPinterestHost(host string) bool {
 	if i := strings.Index(host, ":"); i >= 0 {
 		host = host[:i]
 	}
-	switch {
-	case host == "pin.it", host == "www.pin.it", host == "i.pinimg.com":
+	switch host {
+	case "pin.it", "www.pin.it", "i.pinimg.com",
+		"pinterest.com", "www.pinterest.com":
 		return true
-	case host == "pinterest.com", strings.HasSuffix(host, ".pinterest.com"):
-		return true
-	case strings.HasPrefix(host, "pinterest."):
-		return true
-	default:
-		return false
 	}
+	// pinterest.co.uk, pinterest.ca, etc. — suffix match only.
+	for _, root := range []string{"pinterest.com", "pinterest.co.uk", "pinterest.ca",
+		"pinterest.de", "pinterest.fr", "pinterest.in", "pinterest.jp", "pinterest.au"} {
+		if host == root || strings.HasSuffix(host, "."+root) {
+			return true
+		}
+	}
+	return false
 }
 
 func IsDirectPinImageURL(raw string) bool {

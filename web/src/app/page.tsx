@@ -1,149 +1,121 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { AnalyzeForm } from "@/components/analyze-form";
-import { LoadingState } from "@/components/loading-state";
-import { OutfitResult } from "@/components/outfit-result";
-import { api } from "@/lib/api";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
+import { SiteHeader } from "@/components/site-header";
 
-function HomeInner() {
+export default function LandingPage() {
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const params = useSearchParams();
-  const id = params.get("id");
-  const [stage, setStage] = useState(0);
-
-  const analyze = useMutation({
-    mutationFn: api.analyze,
-    onSuccess: (data) => {
-      router.push(`/?id=${data.id}`);
-    },
-  });
-
-  const analyzeUpload = useMutation({
-    mutationFn: api.analyzeUpload,
-    onSuccess: (data) => {
-      router.push(`/?id=${data.id}`);
-    },
-  });
-
-  const submitting = analyze.isPending || analyzeUpload.isPending;
-
-  const result = useQuery({
-    queryKey: ["result", id],
-    queryFn: () => api.result(id!),
-    enabled: !!id,
-    refetchInterval: (q) => {
-      const status = q.state.data?.status;
-      if (status === "completed" || status === "failed") return false;
-      return 1500;
-    },
-  });
 
   useEffect(() => {
-    if (!id || result.data?.status === "completed" || result.data?.status === "failed") {
-      return;
+    if (!loading && user) {
+      router.replace("/app");
     }
-    const t = setInterval(() => setStage((s) => (s + 1) % 5), 2200);
-    return () => clearInterval(t);
-  }, [id, result.data?.status]);
-
-  const showHero = !id;
-  const showLoading =
-    !!id &&
-    (result.isLoading ||
-      result.data?.status === "pending" ||
-      result.data?.status === "processing");
-  const showResult = result.data?.status === "completed";
-  const showError =
-    analyze.isError ||
-    analyzeUpload.isError ||
-    result.isError ||
-    result.data?.status === "failed";
-
-  const errorMessage = useMemo(() => {
-    if (analyze.isError) return (analyze.error as Error).message;
-    if (analyzeUpload.isError) return (analyzeUpload.error as Error).message;
-    if (result.isError) return (result.error as Error).message;
-    if (result.data?.status === "failed") return result.data.error_message || "Analysis failed";
-    return "";
-  }, [
-    analyze.isError,
-    analyze.error,
-    analyzeUpload.isError,
-    analyzeUpload.error,
-    result.isError,
-    result.error,
-    result.data,
-  ]);
+  }, [loading, user, router]);
 
   return (
-    <main>
-      <header className="site-header">
-        <Link href="/" className="brand">
-          LOOKBOOK
-        </Link>
-        <nav>
-          <Link href="/history">History</Link>
-        </nav>
-      </header>
+    <main className="landing">
+      <SiteHeader variant="landing" />
 
-      {showHero && (
-        <section className="hero">
-          <div className="hero-visual" aria-hidden>
-            <div className="hero-grain" />
-            <div className="hero-photo" />
-            <div className="hero-wash" />
-          </div>
-          <div className="hero-copy">
-            <p className="brand-mark">LOOKBOOK</p>
-            <h1>Turn any look into a shoppable wardrobe.</h1>
-            <p className="lede">
-              Paste a Pinterest pin, or drop a photo / screenshot. We read the
-              outfit, then shop it across Myntra, Snitch, Off Duty, Bewakoof,
-              Westside, and more.
-            </p>
-            <AnalyzeForm
-              onSubmitUrl={(url) => analyze.mutate(url)}
-              onSubmitFile={(file) => analyzeUpload.mutate(file)}
-              loading={submitting}
-            />
-            {(analyze.isError || analyzeUpload.isError) && (
-              <p className="error">{errorMessage}</p>
-            )}
-          </div>
-        </section>
-      )}
-
-      {!showHero && (
-        <section className="workspace">
-          <div className="workspace-top">
-            <Link href="/" className="ghost-link">
-              ← New search
+      <section className="hero landing-hero">
+        <div className="hero-visual" aria-hidden>
+          <div className="hero-grain" />
+          <div className="hero-photo" />
+          <div className="hero-wash" />
+        </div>
+        <div className="hero-copy">
+          <p className="brand-mark">LOOKBOOK</p>
+          <h1>Turn any look into a shoppable wardrobe.</h1>
+          <p className="lede">
+            Paste a Pinterest pin or drop a photo. We read the outfit, then shop
+            it across Myntra, Snitch, Off Duty, Bewakoof, Westside, and more.
+          </p>
+          <div className="hero-actions">
+            <Link href="/auth?mode=signup" className="analyze-cta">
+              Get started
+            </Link>
+            <Link href="/auth?mode=login" className="ghost-link hero-secondary">
+              I already have an account
             </Link>
           </div>
+        </div>
+      </section>
 
-          {showLoading && <LoadingState stage={stage} />}
-          {showError && !showLoading && (
-            <div className="error-panel">
-              <h2>Couldn’t finish this look</h2>
-              <p>{errorMessage}</p>
-              <Link href="/">Try another look</Link>
-            </div>
-          )}
-          {showResult && result.data && <OutfitResult outfit={result.data} />}
-        </section>
-      )}
+      <section id="how" className="landing-section">
+        <p className="eyebrow">How it works</p>
+        <h2>Three steps from pin to cart.</h2>
+        <p className="lede narrow">
+          No moodboards to reverse-engineer by hand — drop a look and get
+          matched products with prices and links.
+        </p>
+        <ol className="steps">
+          <li>
+            <strong>Drop a look</strong>
+            <span>Pinterest URL or any outfit photo / screenshot.</span>
+          </li>
+          <li>
+            <strong>We read the fit</strong>
+            <span>Category, color, material, and vibe — piece by piece.</span>
+          </li>
+          <li>
+            <strong>Shop the matches</strong>
+            <span>Live results from Indian retailers you already use.</span>
+          </li>
+        </ol>
+      </section>
+
+      <section id="demo" className="landing-section landing-demo">
+        <p className="eyebrow">See it</p>
+        <h2>Watch LOOKBOOK in action.</h2>
+        <p className="lede narrow">
+          A short walkthrough of paste → analyze → shop. Video coming soon —
+          drop your own recording here later.
+        </p>
+        <div className="video-slot" aria-label="Product demo video placeholder">
+          <div className="video-slot-inner">
+            <span className="video-label">Demo video</span>
+            <p>Replace this block with your usage walkthrough.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="retailers" className="landing-section">
+        <p className="eyebrow">Coverage</p>
+        <h2>Built for the stores you actually browse.</h2>
+        <p className="lede narrow">
+          Homegrown brands and big marketplaces in one pass — so a street look
+          doesn’t stop at a single site.
+        </p>
+        <ul className="retailer-row">
+          <li>Myntra</li>
+          <li>Ajio</li>
+          <li>Flipkart</li>
+          <li>Snitch</li>
+          <li>Bewakoof</li>
+          <li>Westside</li>
+          <li>H&M</li>
+          <li>Off Duty</li>
+        </ul>
+      </section>
+
+      <section className="landing-section landing-cta">
+        <p className="eyebrow">Ready</p>
+        <h2>Start with one look.</h2>
+        <p className="lede narrow">
+          Create a free account and run your first analysis in under a minute.
+        </p>
+        <Link href="/auth?mode=signup" className="analyze-cta">
+          Sign up free
+        </Link>
+      </section>
+
+      <footer className="landing-footer">
+        <span>LOOKBOOK</span>
+        <span className="muted">AI outfit finder</span>
+      </footer>
     </main>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <Suspense fallback={<main className="workspace"><p className="muted">Loading…</p></main>}>
-      <HomeInner />
-    </Suspense>
   );
 }

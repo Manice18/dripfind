@@ -8,15 +8,26 @@ import (
 )
 
 type Config struct {
-	HTTPAddr       string
-	PostgresDSN    string
-	OpenAIAPIKey   string
-	OpenAIModel    string
-	ImagesDir      string
-	CORSOrigins    []string
-	DemoMode       bool
-	SerpAPIKey     string
-	MigrateOnStart bool
+	HTTPAddr           string
+	PostgresDSN        string
+	OpenAIAPIKey       string
+	OpenAIModel        string
+	ImagesDir          string
+	CORSOrigins        []string
+	DemoMode           bool
+	SerpAPIKey         string
+	MigrateOnStart     bool
+	SessionSecret      string
+	CookieSecure       bool
+	FrontendURL        string
+	APIPublicURL       string
+	GoogleClientID     string
+	GoogleClientSecret string
+	SMTPHost           string
+	SMTPPort           string
+	SMTPUser           string
+	SMTPPassword       string
+	SMTPFrom           string
 }
 
 func Load() (*Config, error) {
@@ -38,15 +49,26 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		HTTPAddr:       getEnv("HTTP_ADDR", ":8080"),
-		PostgresDSN:    dsn,
-		OpenAIAPIKey:   os.Getenv("OPENAI_API_KEY"),
-		OpenAIModel:    getEnv("OPENAI_MODEL", "gpt-4o-mini"),
-		ImagesDir:      getEnv("IMAGES_DIR", "images"),
-		CORSOrigins:    origins,
-		DemoMode:       getEnvBool("DEMO_MODE", false),
-		SerpAPIKey:     os.Getenv("SERPAPI_KEY"),
-		MigrateOnStart: getEnvBool("MIGRATE_ON_START", true),
+		HTTPAddr:           getEnv("HTTP_ADDR", ":8080"),
+		PostgresDSN:        dsn,
+		OpenAIAPIKey:       os.Getenv("OPENAI_API_KEY"),
+		OpenAIModel:        getEnv("OPENAI_MODEL", "gpt-4o-mini"),
+		ImagesDir:          getEnv("IMAGES_DIR", "images"),
+		CORSOrigins:        origins,
+		DemoMode:           getEnvBool("DEMO_MODE", false),
+		SerpAPIKey:         os.Getenv("SERPAPI_KEY"),
+		MigrateOnStart:     getEnvBool("MIGRATE_ON_START", true),
+		SessionSecret:      getEnv("SESSION_SECRET", "dev-session-secret-change-me"),
+		CookieSecure:       getEnvBool("COOKIE_SECURE", false),
+		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:3000"),
+		APIPublicURL:       getEnv("API_PUBLIC_URL", "http://localhost:8080"),
+		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		SMTPHost:           os.Getenv("SMTP_HOST"),
+		SMTPPort:           getEnv("SMTP_PORT", "587"),
+		SMTPUser:           os.Getenv("SMTP_USER"),
+		SMTPPassword:       os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:           getEnv("SMTP_FROM", "LOOKBOOK <noreply@lookbook.local>"),
 	}
 
 	if cfg.OpenAIAPIKey == "" {

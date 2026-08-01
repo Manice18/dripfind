@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
+	"github.com/manice18/outfit_finder/backend/internal/auth"
 	"github.com/manice18/outfit_finder/backend/internal/history"
 	"github.com/manice18/outfit_finder/backend/internal/models"
 	"github.com/manice18/outfit_finder/backend/internal/pinterest"
@@ -22,6 +23,7 @@ import (
 type Server struct {
 	Store    *history.Store
 	Pipeline *pipeline.Pipeline
+	Auth     *auth.Service
 	Log      *slog.Logger
 	Origins  []string
 	Images   http.Handler
@@ -38,7 +40,7 @@ func (s *Server) Router() http.Handler {
 		AllowedOrigins:   s.Origins,
 		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
@@ -48,11 +50,16 @@ func (s *Server) Router() http.Handler {
 
 	r.Handle("/images/*", http.StripPrefix("/images/", s.Images))
 
-	r.Post("/analyze", s.handleAnalyze)
-	r.Post("/analyze/upload", s.handleAnalyzeUpload)
-	r.Get("/result/{id}", s.handleResult)
-	r.Get("/history", s.handleHistory)
-	r.Delete("/history/{id}", s.handleDeleteHistory)
+	s.Auth.Routes(r)
+
+	r.Group(func(r chi.Router) {
+		r.Use(s.Auth.RequireUser)
+		r.Post("/analyze", s.handleAnalyze)
+		r.Post("/analyze/upload", s.handleAnalyzeUpload)
+		r.Get("/result/{id}", s.handleResult)
+		r.Get("/history", s.handleHistory)
+		r.Delete("/history/{id}", s.handleDeleteHistory)
+	})
 
 	return r
 }
@@ -77,6 +84,12 @@ type analyzeRequest struct {
 }
 
 func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	var req analyzeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
@@ -88,7 +101,7 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outfit, err := s.Store.CreateOutfit(r.Context(), req.URL)
+	outfit, err := s.Store.CreateOutfit(r.Context(), userID, req.URL)
 	if err != nil {
 		s.Log.Error("create outfit", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to create analysis job")
@@ -102,6 +115,12 @@ func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 const maxUploadBytes = 12 << 20 // 12 MB
 
 func (s *Server) handleAnalyzeUpload(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+1024)
 	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
 		writeError(w, http.StatusBadRequest, "image too large or invalid multipart form (max 12MB)")
@@ -144,7 +163,7 @@ func (s *Server) handleAnalyzeUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	sourceLabel := "upload:" + filename
 
-	outfit, err := s.Store.CreateOutfit(r.Context(), sourceLabel)
+	outfit, err := s.Store.CreateOutfit(r.Context(), userID, sourceLabel)
 	if err != nil {
 		s.Log.Error("create outfit", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to create analysis job")
@@ -166,13 +185,19 @@ func isAllowedImageType(ct string) bool {
 }
 
 func (s *Server) handleResult(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
 
-	outfit, err := s.Store.GetOutfit(r.Context(), id)
+	outfit, err := s.Store.GetOutfit(r.Context(), id, userID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "result not found")
 		return
@@ -184,7 +209,13 @@ func (s *Server) handleResult(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
-	entries, err := s.Store.ListHistory(r.Context(), 40)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	entries, err := s.Store.ListHistory(r.Context(), userID, 40)
 	if err != nil {
 		s.Log.Error("list history", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to load history")
@@ -197,12 +228,18 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDeleteHistory(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := s.Store.DeleteHistory(r.Context(), id); err != nil {
+	if err := s.Store.DeleteHistory(r.Context(), id, userID); err != nil {
 		writeError(w, http.StatusNotFound, "history entry not found")
 		return
 	}

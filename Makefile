@@ -1,6 +1,9 @@
-.PHONY: up down tools migrate-up api web install tidy start stop
+.PHONY: up down tools migrate migrate-up migrate-revert migrate-info migrate-new api web install tidy start stop
 
 RUN_DIR := .run
+MIGRATIONS_DIR := backend/migrations
+POSTGRES_USER ?= outfit
+POSTGRES_DB ?= outfitfinder
 
 up:
 	docker compose up -d postgres
@@ -11,8 +14,93 @@ down:
 tools:
 	docker compose --profile tools up -d
 
+# Apply pending *.up.sql via the same schema_migrations table the API uses.
+# (Also applied automatically on API start when MIGRATE_ON_START=true.)
+migrate: migrate-up
+
 migrate-up:
-	@echo "Migrations run automatically on API start (MIGRATE_ON_START=true)"
+	@echo "Applying pending migrations..."
+	@docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB) >/dev/null \
+		|| { echo "ERROR: Postgres is not ready. Run 'make up' first."; exit 1; }
+	@docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 -c \
+		"CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW());" >/dev/null
+	@applied=0; \
+	for f in $$(ls -1 $(MIGRATIONS_DIR)/*.up.sql 2>/dev/null | sort); do \
+		version=$$(basename "$$f" .up.sql); \
+		exists=$$(docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -Atc \
+			"SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version='$$version')"); \
+		if [ "$$exists" = "t" ]; then \
+			echo "  skip  $$version"; \
+			continue; \
+		fi; \
+		echo "  apply $$version"; \
+		docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 < "$$f" \
+			|| { echo "ERROR: failed applying $$f"; exit 1; }; \
+		docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 -c \
+			"INSERT INTO schema_migrations(version) VALUES('$$version');" >/dev/null \
+			|| { echo "ERROR: failed recording $$version"; exit 1; }; \
+		applied=$$((applied + 1)); \
+	done; \
+	if [ "$$applied" -eq 0 ]; then echo "Already up to date."; else echo "Applied $$applied migration(s)."; fi
+
+migrate-revert:
+	@echo "Reverting last migration..."
+	@docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB) >/dev/null \
+		|| { echo "ERROR: Postgres is not ready. Run 'make up' first."; exit 1; }
+	@latest=$$(docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -Atc \
+		"SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1;" 2>/dev/null); \
+	if [ -z "$$latest" ]; then echo "No migrations to revert."; exit 1; fi; \
+	down="$(MIGRATIONS_DIR)/$${latest}.down.sql"; \
+	if [ ! -f "$$down" ]; then echo "ERROR: missing $$down"; exit 1; fi; \
+	echo "  revert $$latest"; \
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 < "$$down" \
+		|| { echo "ERROR: failed applying $$down"; exit 1; }; \
+	docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -v ON_ERROR_STOP=1 -c \
+		"DELETE FROM schema_migrations WHERE version='$$latest';" >/dev/null; \
+	echo "Reverted $$latest"
+
+migrate-info:
+	@echo "Checking migration status..."
+	@docker compose exec -T postgres pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB) >/dev/null \
+		|| { echo "ERROR: Postgres is not ready. Run 'make up' first."; exit 1; }
+	@echo ""
+	@echo "Applied (schema_migrations):"
+	@docker compose exec -T postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c \
+		"SELECT version, applied_at FROM schema_migrations ORDER BY version;" 2>/dev/null \
+		|| echo "  (schema_migrations does not exist yet — run 'make migrate')"
+	@echo ""
+	@echo "Files in $(MIGRATIONS_DIR)/:"
+	@ls -1 $(MIGRATIONS_DIR)/*.up.sql 2>/dev/null | xargs -n1 basename || echo "  (none)"
+
+migrate-new:
+	@echo "Creating new migration..."
+	@echo ""
+	@echo "Usage: make migrate-new NAME='description_of_change'"
+	@echo ""
+	@if [ -z "$(NAME)" ]; then \
+		echo "ERROR: NAME is required"; \
+		echo "Example: make migrate-new NAME='add_user_preferences'"; \
+		exit 1; \
+	fi
+	@mkdir -p $(MIGRATIONS_DIR); \
+	last=$$(ls -1 $(MIGRATIONS_DIR)/*.up.sql 2>/dev/null | sed 's|.*/||; s/_.*||' | sort -n | tail -1); \
+	if [ -z "$$last" ]; then next=1; else next=$$((10#$$last + 1)); fi; \
+	ver=$$(printf "%06d" $$next); \
+	up="$(MIGRATIONS_DIR)/$${ver}_$(NAME).up.sql"; \
+	down="$(MIGRATIONS_DIR)/$${ver}_$(NAME).down.sql"; \
+	printf -- "-- +migrate Up\n\n" > "$$up"; \
+	printf -- "-- +migrate Down\n\n" > "$$down"; \
+	echo ""; \
+	echo "Migration created:"; \
+	echo "  $$up"; \
+	echo "  $$down"; \
+	echo ""; \
+	echo "Next steps:"; \
+	echo "  1. Edit the new migration files in $(MIGRATIONS_DIR)/"; \
+	echo "  2. Run 'make migrate' to apply it locally"; \
+	echo "  3. Test thoroughly before committing"; \
+	echo ""; \
+	echo "IMPORTANT: Never modify migrations after committing them!"
 
 api:
 	cd backend && go run ./cmd/api

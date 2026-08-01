@@ -12,6 +12,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/manice18/outfit_finder/backend/internal/api"
+	"github.com/manice18/outfit_finder/backend/internal/auth"
 	"github.com/manice18/outfit_finder/backend/internal/config"
 	"github.com/manice18/outfit_finder/backend/internal/database"
 	"github.com/manice18/outfit_finder/backend/internal/history"
@@ -97,9 +98,34 @@ func main() {
 		Log:       log,
 	}
 
+	var mailer auth.Mailer = auth.LogMailer{Log: log}
+	if cfg.SMTPHost != "" {
+		mailer = auth.SMTPMailer{
+			Host:     cfg.SMTPHost,
+			Port:     cfg.SMTPPort,
+			User:     cfg.SMTPUser,
+			Password: cfg.SMTPPassword,
+			From:     cfg.SMTPFrom,
+			Log:      log,
+		}
+	}
+
+	authSvc := &auth.Service{
+		Store:              auth.NewStore(pool),
+		Mailer:             mailer,
+		Log:                log,
+		SessionSecret:      cfg.SessionSecret,
+		CookieSecure:       cfg.CookieSecure,
+		FrontendURL:        cfg.FrontendURL,
+		APIPublicURL:       cfg.APIPublicURL,
+		GoogleClientID:     cfg.GoogleClientID,
+		GoogleClientSecret: cfg.GoogleClientSecret,
+	}
+
 	srv := &api.Server{
 		Store:    store,
 		Pipeline: pipe,
+		Auth:     authSvc,
 		Log:      log,
 		Origins:  cfg.CORSOrigins,
 		Images:   http.FileServer(http.Dir(imagesDir)),

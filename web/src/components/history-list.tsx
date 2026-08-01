@@ -28,7 +28,7 @@ export function HistoryList() {
     <ul className="history-list">
       {items.map((entry) => (
         <li key={entry.id}>
-          <Link href={`/?id=${entry.outfit_id}`} className="history-link">
+          <Link href={`/app?id=${entry.outfit_id}`} className="history-link">
             {entry.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={mediaURL(entry.image_url)} alt="" />

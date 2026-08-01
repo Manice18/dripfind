@@ -2,16 +2,25 @@ import type { HistoryEntry, Outfit } from "@/types/outfit";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  email_verified: boolean;
+  created_at: string;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
-  if (!isFormData && !headers.has("Content-Type")) {
+  if (!isFormData && !headers.has("Content-Type") && init?.body) {
     headers.set("Content-Type", "application/json");
   }
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers,
+    credentials: "include",
   });
 
   const data = await res.json().catch(() => ({}));
@@ -27,7 +36,43 @@ export function mediaURL(path?: string) {
   return `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
+export function googleAuthURL() {
+  return `${API_BASE}/auth/google`;
+}
+
 export const api = {
+  me: () => request<{ user: AuthUser }>("/auth/me"),
+
+  register: (body: { email: string; password: string; name?: string }) =>
+    request<{ user: AuthUser }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  login: (body: { email: string; password: string }) =>
+    request<{ user: AuthUser }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  logout: () =>
+    request<{ status: string }>("/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+
+  requestOTP: (email: string) =>
+    request<{ status: string; message: string }>("/auth/otp/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  verifyOTP: (email: string, code: string) =>
+    request<{ user: AuthUser }>("/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ email, code }),
+    }),
+
   analyze: (url: string) =>
     request<{ id: string }>("/analyze", {
       method: "POST",

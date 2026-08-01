@@ -15,6 +15,11 @@ type Provider interface {
 	Search(ctx context.Context, item models.ClothingItem, gender string) ([]models.Product, error)
 }
 
+// providerTimeout caps how long any single store can block an item search.
+// Without this, a hanging provider (e.g. Flipkart warm+fetch) waits on the
+// full client timeout twice and stalls the whole pipeline past its deadline.
+const providerTimeout = 12 * time.Second
+
 type Engine struct {
 	providers []Provider
 	log       *slog.Logger
@@ -45,7 +50,9 @@ func (e *Engine) SearchItem(ctx context.Context, item models.ClothingItem, gende
 		go func(prov Provider) {
 			defer wg.Done()
 			start := time.Now()
-			products, err := prov.Search(ctx, item, gender)
+			pctx, cancel := context.WithTimeout(ctx, providerTimeout)
+			defer cancel()
+			products, err := prov.Search(pctx, item, gender)
 			ch <- providerOut{
 				name:     prov.Name(),
 				products: products,
