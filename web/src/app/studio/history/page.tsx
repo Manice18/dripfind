@@ -26,10 +26,9 @@ export default function HistoryPage() {
 
   return (
     <main className="workspace history-page">
-      <SiteHeader variant="app" />
+      <SiteHeader variant="studio" />
 
       <section className="history-section">
-        <p className="eyebrow">Archive</p>
         <h1>Search history</h1>
         <p className="lede narrow">
           Reopen a previous analysis or clear entries you no longer need.

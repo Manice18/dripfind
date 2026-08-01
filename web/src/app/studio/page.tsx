@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { AnalyzeForm } from "@/components/analyze-form";
 import { useAuth } from "@/components/auth-provider";
+import { HeroVisual } from "@/components/hero-visual";
 import { LoadingState } from "@/components/loading-state";
 import { OutfitResult } from "@/components/outfit-result";
 import { SiteHeader } from "@/components/site-header";
@@ -27,14 +28,14 @@ function AppInner() {
   const analyze = useMutation({
     mutationFn: api.analyze,
     onSuccess: (data) => {
-      router.push(`/app?id=${data.id}`);
+      router.push(`/studio?id=${data.id}`);
     },
   });
 
   const analyzeUpload = useMutation({
     mutationFn: api.analyzeUpload,
     onSuccess: (data) => {
-      router.push(`/app?id=${data.id}`);
+      router.push(`/studio?id=${data.id}`);
     },
   });
 
@@ -98,15 +99,11 @@ function AppInner() {
 
   return (
     <main>
-      <SiteHeader variant="app" />
+      <SiteHeader variant="studio" />
 
       {showHero && (
         <section className="hero">
-          <div className="hero-visual" aria-hidden>
-            <div className="hero-grain" />
-            <div className="hero-photo" />
-            <div className="hero-wash" />
-          </div>
+          <HeroVisual />
           <div className="hero-copy">
             <p className="brand-mark">LOOKBOOK</p>
             <h1>Turn any look into a shoppable wardrobe.</h1>
@@ -130,17 +127,17 @@ function AppInner() {
       {!showHero && (
         <section className="workspace">
           <div className="workspace-top">
-            <Link href="/app" className="ghost-link">
+            <Link href="/studio" className="ghost-link">
               ← New search
             </Link>
           </div>
 
           {showLoading && <LoadingState stage={stage} />}
           {showError && !showLoading && (
-            <div className="error-panel">
+            <div className="error-panel" role="alert">
               <h2>Couldn’t finish this look</h2>
               <p>{errorMessage}</p>
-              <Link href="/app">Try another look</Link>
+              <Link href="/studio">Try another look</Link>
             </div>
           )}
           {showResult && result.data && <OutfitResult outfit={result.data} />}

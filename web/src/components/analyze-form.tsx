@@ -134,6 +134,8 @@ export function AnalyzeForm({
           }}
           tabIndex={0}
           role="button"
+          aria-label="Upload outfit photo"
+          aria-disabled={loading || undefined}
           onClick={() => inputRef.current?.click()}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -175,7 +177,11 @@ export function AnalyzeForm({
             </div>
           )}
         </div>
-        {localError && <p className="error analyze-path-error">{localError}</p>}
+        {localError && (
+          <p className="error analyze-path-error" role="alert">
+            {localError}
+          </p>
+        )}
         <button
           type="button"
           className="analyze-cta analyze-cta-photo"

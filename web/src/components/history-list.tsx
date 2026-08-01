@@ -21,17 +21,25 @@ export function HistoryList() {
 
   const items = data?.items ?? [];
   if (items.length === 0) {
-    return <p className="muted">No searches yet. Paste a Pinterest pin to begin.</p>;
+    return (
+      <p className="muted">
+        No searches yet.{" "}
+        <Link href="/studio" className="ghost-link">
+          Run a new search
+        </Link>
+        .
+      </p>
+    );
   }
 
   return (
     <ul className="history-list">
       {items.map((entry) => (
         <li key={entry.id}>
-          <Link href={`/app?id=${entry.outfit_id}`} className="history-link">
+          <Link href={`/studio?id=${entry.outfit_id}`} className="history-link">
             {entry.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaURL(entry.image_url)} alt="" />
+              <img src={mediaURL(entry.image_url)} alt="" loading="lazy" decoding="async" />
             ) : (
               <div className="history-placeholder" />
             )}

@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   // traces as reachable. Required by web/Dockerfile; shrinks the image ~85%.
   output: "standalone",
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "i.pinimg.com" },

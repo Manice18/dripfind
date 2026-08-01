@@ -184,7 +184,7 @@ func (s *Service) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setSessionCookie(w, token, expires)
-	http.Redirect(w, r, FrontendRedirect(s.FrontendURL, "/app", nil), http.StatusFound)
+	http.Redirect(w, r, FrontendRedirect(s.FrontendURL, "/studio", nil), http.StatusFound)
 }
 
 func (s *Service) setSessionCookie(w http.ResponseWriter, token string, expires time.Time) {

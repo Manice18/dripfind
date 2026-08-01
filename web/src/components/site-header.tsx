@@ -2,30 +2,43 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
+import { IconLogout, IconUser } from "@/components/icons";
 
-export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app" }) {
+type HeaderVariant = "landing" | "studio" | "auth";
+
+export function SiteHeader({ variant = "landing" }: { variant?: HeaderVariant }) {
   const { user, loading, logout } = useAuth();
+  const displayName = user?.name || user?.email || "Account";
+  const navLabel =
+    variant === "landing" ? "Account" : variant === "auth" ? "Account" : "Studio";
 
   return (
-    <header className="site-header">
-      <Link href={user ? "/app" : "/"} className="brand">
+    <header className={`site-header${variant === "landing" ? " site-header-landing" : ""}`}>
+      <Link href={user ? "/studio" : "/"} className="brand">
         LOOKBOOK
       </Link>
-      <nav className="site-nav">
-        {variant === "landing" && (
+
+      {variant === "landing" && (
+        <nav className="landing-jump" aria-label="On this page">
+          <a href="#how">How it works</a>
+          <a href="#demo">Demo</a>
+          <a href="#retailers">Retailers</a>
+        </nav>
+      )}
+
+      <nav className="site-nav site-nav-primary" aria-label={navLabel}>
+        {variant === "studio" && user && (
           <>
-            <a href="#how">How it works</a>
-            <a href="#demo">Demo</a>
-            <a href="#retailers">Retailers</a>
+            <Link href="/studio">Search</Link>
+            <Link href="/studio/history">History</Link>
           </>
         )}
-        {variant === "app" && user && (
-          <>
-            <Link href="/app">Search</Link>
-            <Link href="/app/history">History</Link>
-          </>
+        {loading && (
+          <span className="nav-status" role="status">
+            Checking session…
+          </span>
         )}
-        {!loading && !user && (
+        {!loading && !user && variant !== "auth" && (
           <>
             <Link href="/auth?mode=login" className="nav-ghost">
               Log in
@@ -35,13 +48,33 @@ export function SiteHeader({ variant = "landing" }: { variant?: "landing" | "app
             </Link>
           </>
         )}
+        {!loading && !user && variant === "auth" && (
+          <Link href="/" className="nav-ghost">
+            Home
+          </Link>
+        )}
         {!loading && user && (
           <>
-            <span className="nav-user">{user.name || user.email}</span>
-            <button type="button" className="nav-ghost-btn" onClick={() => void logout().then(() => {
-              window.location.href = "/";
-            })}>
-              Log out
+            <Link
+              href="/studio/settings"
+              className="nav-icon-btn nav-icon-btn-profile"
+              aria-label={`Account settings for ${displayName}`}
+              title={displayName}
+            >
+              <IconUser />
+            </Link>
+            <button
+              type="button"
+              className="nav-icon-btn"
+              aria-label="Log out"
+              title="Log out"
+              onClick={() =>
+                void logout().then(() => {
+                  window.location.href = "/";
+                })
+              }
+            >
+              <IconLogout />
             </button>
           </>
         )}
