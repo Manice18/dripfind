@@ -1,4 +1,4 @@
-.PHONY: up down tools migrate migrate-up migrate-revert migrate-info migrate-new api web install tidy start stop
+.PHONY: up down tools migrate migrate-up migrate-revert migrate-info migrate-new api worker web install tidy start stop
 
 RUN_DIR := .run
 MIGRATIONS_DIR := backend/migrations
@@ -7,9 +7,11 @@ POSTGRES_DB ?= outfitfinder
 
 up:
 	docker compose up -d postgres
+	docker compose -f minio/docker-compose.yaml --project-directory minio up -d
 
 down:
 	docker compose down
+	docker compose -f minio/docker-compose.yaml --project-directory minio down
 
 tools:
 	docker compose --profile tools up -d
@@ -105,6 +107,9 @@ migrate-new:
 api:
 	cd backend && go run ./cmd/api
 
+worker:
+	cd backend && go run ./cmd/worker
+
 web:
 	cd web && npm run dev
 
@@ -115,7 +120,7 @@ install:
 tidy:
 	cd backend && go mod tidy
 
-# Start Postgres + API + web in the background.
+# Start Postgres + MinIO + API + worker + web in the background.
 start: up
 	@mkdir -p $(RUN_DIR)
 	@echo "Waiting for Postgres..."
@@ -123,26 +128,49 @@ start: up
 		docker compose exec -T postgres pg_isready >/dev/null 2>&1 && break; \
 		sleep 1; \
 	done
+	@echo "Waiting for MinIO..."
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		curl -sf http://127.0.0.1:9000/minio/health/live >/dev/null 2>&1 && break; \
+		sleep 1; \
+	done
 	@if lsof -ti tcp:8080 >/dev/null 2>&1; then \
 		echo "API already running on :8080"; \
 	else \
-		(cd backend && go run ./cmd/api > ../$(RUN_DIR)/api.log 2>&1 & echo $$! > ../$(RUN_DIR)/api.pid); \
+		sh -c 'cd backend || exit 1; nohup go run ./cmd/api >"$$1" 2>&1 & echo $$! >"$$2"' \
+			_ $(CURDIR)/$(RUN_DIR)/api.log $(CURDIR)/$(RUN_DIR)/api.pid; \
 		echo "API started → $(RUN_DIR)/api.log"; \
+	fi
+	@echo "Waiting for API..."
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+		curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1 && break; \
+		sleep 1; \
+	done
+	@if [ -f $(RUN_DIR)/worker.pid ] && kill -0 $$(cat $(RUN_DIR)/worker.pid) 2>/dev/null; then \
+		echo "Worker already running (pid $$(cat $(RUN_DIR)/worker.pid))"; \
+	else \
+		sh -c 'cd backend || exit 1; nohup go run ./cmd/worker >"$$1" 2>&1 & echo $$! >"$$2"' \
+			_ $(CURDIR)/$(RUN_DIR)/worker.log $(CURDIR)/$(RUN_DIR)/worker.pid; \
+		echo "Worker started → $(RUN_DIR)/worker.log"; \
 	fi
 	@if lsof -ti tcp:3000 >/dev/null 2>&1; then \
 		echo "Web already running on :3000"; \
 	else \
-		(cd web && npm run dev > ../$(RUN_DIR)/web.log 2>&1 & echo $$! > ../$(RUN_DIR)/web.pid); \
+		sh -c 'cd web || exit 1; nohup npm run dev >"$$1" 2>&1 & echo $$! >"$$2"' \
+			_ $(CURDIR)/$(RUN_DIR)/web.log $(CURDIR)/$(RUN_DIR)/web.pid; \
 		echo "Web started → $(RUN_DIR)/web.log"; \
 	fi
 	@echo "LOOKBOOK: http://localhost:3000  ·  API: http://localhost:8080"
 
-# Stop API, web, and Postgres.
+# Stop API, worker, web, and Postgres.
 stop:
 	@if [ -f $(RUN_DIR)/api.pid ]; then kill $$(cat $(RUN_DIR)/api.pid) 2>/dev/null || true; fi
+	@if [ -f $(RUN_DIR)/worker.pid ]; then kill $$(cat $(RUN_DIR)/worker.pid) 2>/dev/null || true; fi
 	@if [ -f $(RUN_DIR)/web.pid ]; then kill $$(cat $(RUN_DIR)/web.pid) 2>/dev/null || true; fi
 	@-lsof -ti tcp:8080 | xargs kill 2>/dev/null || true
 	@-lsof -ti tcp:3000 | xargs kill 2>/dev/null || true
-	@rm -f $(RUN_DIR)/api.pid $(RUN_DIR)/web.pid
+	@-pkill -f 'go run ./cmd/worker' 2>/dev/null || true
+	@-pkill -f 'backend/cmd/worker' 2>/dev/null || true
+	@rm -f $(RUN_DIR)/api.pid $(RUN_DIR)/worker.pid $(RUN_DIR)/web.pid
 	@docker compose down
-	@echo "Stopped Postgres, API, and web."
+	@docker compose -f minio/docker-compose.yaml --project-directory minio down
+	@echo "Stopped Postgres, MinIO, API, worker, and web."
