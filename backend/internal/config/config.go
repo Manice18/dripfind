@@ -30,6 +30,15 @@ type Config struct {
 	SMTPFrom           string
 	WorkerConcurrency  int
 	JobMaxAttempts     int
+
+	StorageBackend    string
+	S3Endpoint        string
+	S3Region          string
+	S3Bucket          string
+	S3AccessKeyID     string
+	S3SecretAccessKey string
+	S3PublicBaseURL   string
+	S3ForcePathStyle  bool
 }
 
 func Load() (*Config, error) {
@@ -73,6 +82,15 @@ func Load() (*Config, error) {
 		SMTPFrom:           getEnv("SMTP_FROM", "LOOKBOOK <noreply@lookbook.local>"),
 		WorkerConcurrency:  getEnvInt("WORKER_CONCURRENCY", 4),
 		JobMaxAttempts:     getEnvInt("JOB_MAX_ATTEMPTS", 3),
+
+		StorageBackend:    getEnv("STORAGE_BACKEND", "s3"),
+		S3Endpoint:        getEnv("S3_ENDPOINT", "http://localhost:9000"),
+		S3Region:          getEnv("S3_REGION", "us-east-1"),
+		S3Bucket:          getEnv("S3_BUCKET", "lookbook"),
+		S3AccessKeyID:     getEnv("S3_ACCESS_KEY_ID", "minioadmin"),
+		S3SecretAccessKey: getEnv("S3_SECRET_ACCESS_KEY", "minioadmin"),
+		S3PublicBaseURL:   getEnv("S3_PUBLIC_BASE_URL", "http://localhost:9000/lookbook"),
+		S3ForcePathStyle:  getEnvBool("S3_FORCE_PATH_STYLE", true),
 	}
 
 	if cfg.OpenAIAPIKey == "" {

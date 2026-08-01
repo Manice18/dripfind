@@ -3,8 +3,9 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
-	"path/filepath"
+	"path"
 	"time"
 
 	"github.com/google/uuid"
@@ -64,22 +65,35 @@ func (p *Pipeline) RunUpload(ctx context.Context, outfitID uuid.UUID, imageKey, 
 }
 
 func (p *Pipeline) finishFromImage(ctx context.Context, outfitID uuid.UUID, sourceURL string, data []byte, contentType string) error {
-	rel, err := p.Storage.Save(data, contentType)
+	key, err := p.Storage.Save(ctx, data, contentType)
 	if err != nil {
 		return fmt.Errorf("save image: %w", err)
 	}
-	return p.finishFromStored(ctx, outfitID, sourceURL, rel)
+	p.Log.Info("image saved to object storage", "outfit_id", outfitID, "key", key, "bytes", len(data), "url", p.Storage.PublicURL(key))
+	return p.finishFromBytes(ctx, outfitID, sourceURL, key, data, contentType)
 }
 
-func (p *Pipeline) finishFromStored(ctx context.Context, outfitID uuid.UUID, sourceURL, rel string) error {
+func (p *Pipeline) finishFromStored(ctx context.Context, outfitID uuid.UUID, sourceURL, key string) error {
+	rc, err := p.Storage.Open(ctx, key)
+	if err != nil {
+		return fmt.Errorf("open image: %w", err)
+	}
+	defer rc.Close()
+
+	data, err := io.ReadAll(rc)
+	if err != nil {
+		return fmt.Errorf("read image: %w", err)
+	}
+	return p.finishFromBytes(ctx, outfitID, sourceURL, key, data, storage.ContentTypeFromKey(key))
+}
+
+func (p *Pipeline) finishFromBytes(ctx context.Context, outfitID uuid.UUID, sourceURL, key string, data []byte, contentType string) error {
 	log := p.Log.With("outfit_id", outfitID)
 	start := time.Now()
-
-	abs := p.Storage.AbsPath(rel)
-	log.Info("image ready", "path", rel)
+	log.Info("image ready", "key", key)
 
 	visionStart := time.Now()
-	analyzed, err := p.Vision.Analyze(ctx, abs)
+	analyzed, err := p.Vision.Analyze(ctx, data, contentType)
 	if err != nil {
 		return fmt.Errorf("vision: %w", err)
 	}
@@ -87,7 +101,7 @@ func (p *Pipeline) finishFromStored(ctx context.Context, outfitID uuid.UUID, sou
 
 	outfit := &models.Outfit{
 		ID:        outfitID,
-		ImagePath: filepath.ToSlash(rel),
+		ImagePath: path.Clean(key),
 		SourceURL: sourceURL,
 		Style:     analyzed.Style,
 		Gender:    analyzed.Gender,

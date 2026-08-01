@@ -28,7 +28,7 @@ type Server struct {
 	Auth           *auth.Service
 	Log            *slog.Logger
 	Origins        []string
-	Images         http.Handler
+	Images         http.Handler // optional: only set for local storage backend
 	JobMaxAttempts int
 }
 
@@ -51,7 +51,9 @@ func (s *Server) Router() http.Handler {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	r.Handle("/images/*", http.StripPrefix("/images/", s.Images))
+	if s.Images != nil {
+		r.Handle("/images/*", http.StripPrefix("/images/", s.Images))
+	}
 
 	s.Auth.Routes(r)
 
@@ -179,7 +181,7 @@ func (s *Server) handleAnalyzeUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Persist bytes before enqueue so the payload only holds a storage key
 	// (Phase 4 will swap local storage for object storage without changing jobs).
-	imageKey, err := s.Storage.Save(data, contentType)
+	imageKey, err := s.Storage.Save(r.Context(), data, contentType)
 	if err != nil {
 		s.Log.Error("save upload", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to store image")
@@ -241,7 +243,7 @@ func (s *Server) handleResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if outfit.ImagePath != "" {
-		outfit.ImageURL = "/images/" + outfit.ImagePath
+		outfit.ImageURL = s.Storage.PublicURL(outfit.ImagePath)
 	}
 	writeJSON(w, http.StatusOK, outfit)
 }
@@ -261,6 +263,11 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	if entries == nil {
 		entries = []models.HistoryEntry{}
+	}
+	for i := range entries {
+		if entries[i].ImagePath != "" {
+			entries[i].ImageURL = s.Storage.PublicURL(entries[i].ImagePath)
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": entries})
 }

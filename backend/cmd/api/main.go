@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -49,15 +50,12 @@ func main() {
 		log.Info("migrations applied", "dir", migDir)
 	}
 
-	imagesDir := cfg.ImagesDir
-	if !filepath.IsAbs(imagesDir) {
-		imagesDir = filepath.Join(findBackendRoot(), imagesDir)
-	}
-	localStore, err := storage.NewLocalStorage(imagesDir)
+	imageStore, imagesHandler, err := buildStorage(ctx, cfg)
 	if err != nil {
 		log.Error("storage", "error", err)
 		os.Exit(1)
 	}
+	log.Info("storage ready", "backend", strings.ToLower(cfg.StorageBackend))
 
 	var mailer auth.Mailer = auth.LogMailer{Log: log}
 	if cfg.SMTPHost != "" {
@@ -86,11 +84,11 @@ func main() {
 	srv := &api.Server{
 		Store:          history.NewStore(pool),
 		Jobs:           jobs.NewStore(pool, cfg.JobMaxAttempts),
-		Storage:        localStore,
+		Storage:        imageStore,
 		Auth:           authSvc,
 		Log:            log,
 		Origins:        cfg.CORSOrigins,
-		Images:         http.FileServer(http.Dir(imagesDir)),
+		Images:         imagesHandler,
 		JobMaxAttempts: cfg.JobMaxAttempts,
 	}
 
@@ -115,6 +113,35 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = httpServer.Shutdown(shutdownCtx)
+}
+
+func buildStorage(ctx context.Context, cfg *config.Config) (storage.ImageStorage, http.Handler, error) {
+	imagesDir := cfg.ImagesDir
+	if !filepath.IsAbs(imagesDir) {
+		imagesDir = filepath.Join(findBackendRoot(), imagesDir)
+	}
+
+	store, err := storage.BackendFromConfig(ctx, cfg.StorageBackend, storage.LocalConfig{
+		Dir:        imagesDir,
+		PublicBase: "/images",
+	}, storage.S3Config{
+		Endpoint:       cfg.S3Endpoint,
+		Region:         cfg.S3Region,
+		Bucket:         cfg.S3Bucket,
+		AccessKey:      cfg.S3AccessKeyID,
+		SecretKey:      cfg.S3SecretAccessKey,
+		PublicBaseURL:  cfg.S3PublicBaseURL,
+		ForcePathStyle: cfg.S3ForcePathStyle,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var images http.Handler
+	if strings.EqualFold(cfg.StorageBackend, "local") || cfg.StorageBackend == "" {
+		images = http.FileServer(http.Dir(imagesDir))
+	}
+	return store, images, nil
 }
 
 func findBackendRoot() string {

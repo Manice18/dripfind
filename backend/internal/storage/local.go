@@ -1,24 +1,23 @@
 package storage
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/google/uuid"
 )
 
-type ImageStorage interface {
-	Save(data []byte, contentType string) (string, error)
-	AbsPath(rel string) string
-}
-
+// LocalStorage writes to a local directory and serves via /images/* on the API.
 type LocalStorage struct {
-	baseDir string
+	baseDir    string
+	publicBase string // e.g. "/images"
 }
 
-func NewLocalStorage(baseDir string) (*LocalStorage, error) {
+func NewLocalStorage(baseDir, publicBase string) (*LocalStorage, error) {
+	if publicBase == "" {
+		publicBase = "/images"
+	}
 	originals := filepath.Join(baseDir, "originals")
 	processed := filepath.Join(baseDir, "processed")
 	for _, d := range []string{originals, processed} {
@@ -26,34 +25,36 @@ func NewLocalStorage(baseDir string) (*LocalStorage, error) {
 			return nil, err
 		}
 	}
-	return &LocalStorage{baseDir: baseDir}, nil
+	return &LocalStorage{baseDir: baseDir, publicBase: publicBase}, nil
 }
 
-func (s *LocalStorage) Save(data []byte, contentType string) (string, error) {
-	ext := extFromContentType(contentType)
-	name := uuid.New().String() + ext
-	rel := filepath.Join("originals", name)
-	abs := filepath.Join(s.baseDir, rel)
+func (s *LocalStorage) Save(_ context.Context, data []byte, contentType string) (string, error) {
+	key := newObjectKey(contentType)
+	abs := filepath.Join(s.baseDir, filepath.FromSlash(key))
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		return "", fmt.Errorf("mkdir: %w", err)
+	}
 	if err := os.WriteFile(abs, data, 0o644); err != nil {
 		return "", fmt.Errorf("write image: %w", err)
 	}
-	return rel, nil
+	return key, nil
 }
 
-func (s *LocalStorage) AbsPath(rel string) string {
-	return filepath.Join(s.baseDir, rel)
-}
-
-func extFromContentType(ct string) string {
-	ct = strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
-	switch ct {
-	case "image/png":
-		return ".png"
-	case "image/webp":
-		return ".webp"
-	case "image/gif":
-		return ".gif"
-	default:
-		return ".jpg"
+func (s *LocalStorage) Open(_ context.Context, key string) (io.ReadCloser, error) {
+	key = normalizeKey(key)
+	abs := filepath.Join(s.baseDir, filepath.FromSlash(key))
+	f, err := os.Open(abs)
+	if err != nil {
+		return nil, fmt.Errorf("open image: %w", err)
 	}
+	return f, nil
 }
+
+func (s *LocalStorage) PublicURL(key string) string {
+	if key == "" {
+		return ""
+	}
+	return joinURL(s.publicBase, normalizeKey(key))
+}
+
+var _ ImageStorage = (*LocalStorage)(nil)

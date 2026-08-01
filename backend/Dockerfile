@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------- build ----------
-FROM golang:1.24-alpine AS build
+FROM golang:1.25-alpine AS build
 WORKDIR /src
 
 # Copy manifests first so dependency download is cached independently of source

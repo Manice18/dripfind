@@ -176,12 +176,8 @@ func (s *Store) ListHistory(ctx context.Context, userID uuid.UUID, limit int) ([
 	var out []models.HistoryEntry
 	for rows.Next() {
 		var e models.HistoryEntry
-		var imagePath string
-		if err := rows.Scan(&e.ID, &e.OutfitID, &e.SourceURL, &e.CreatedAt, &e.Style, &e.Gender, &e.Status, &imagePath); err != nil {
+		if err := rows.Scan(&e.ID, &e.OutfitID, &e.SourceURL, &e.CreatedAt, &e.Style, &e.Gender, &e.Status, &e.ImagePath); err != nil {
 			return nil, err
-		}
-		if imagePath != "" {
-			e.ImageURL = "/images/" + imagePath
 		}
 		out = append(out, e)
 	}

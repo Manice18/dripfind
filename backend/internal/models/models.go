@@ -64,6 +64,7 @@ type HistoryEntry struct {
 	Style     string    `json:"style,omitempty"`
 	Gender    string    `json:"gender,omitempty"`
 	Status    string    `json:"status,omitempty"`
+	ImagePath string    `json:"-"`
 	ImageURL  string    `json:"image_url,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }

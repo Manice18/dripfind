@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,7 +16,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(ctx context.Context, imagePath string) (*models.VisionOutfit, error)
+	Analyze(ctx context.Context, data []byte, contentType string) (*models.VisionOutfit, error)
 }
 
 type OpenAIAnalyzer struct {
@@ -39,7 +37,7 @@ type DemoAnalyzer struct{}
 
 func NewDemoAnalyzer() *DemoAnalyzer { return &DemoAnalyzer{} }
 
-func (d *DemoAnalyzer) Analyze(_ context.Context, _ string) (*models.VisionOutfit, error) {
+func (d *DemoAnalyzer) Analyze(_ context.Context, _ []byte, _ string) (*models.VisionOutfit, error) {
 	return &models.VisionOutfit{
 		Gender:   "male",
 		Style:    "Old Money",
@@ -85,19 +83,21 @@ type chatResponse struct {
 	} `json:"error"`
 }
 
-func (a *OpenAIAnalyzer) Analyze(ctx context.Context, imagePath string) (*models.VisionOutfit, error) {
-	data, err := os.ReadFile(imagePath)
-	if err != nil {
-		return nil, err
+func (a *OpenAIAnalyzer) Analyze(ctx context.Context, data []byte, contentType string) (*models.VisionOutfit, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("empty image")
 	}
-	mime := mimeFromExt(filepath.Ext(imagePath))
-	dataURL := fmt.Sprintf("data:%s;base64,%s", mime, base64.StdEncoding.EncodeToString(data))
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(data))
 
 	payload := chatRequest{
 		Model: a.model,
 		Messages: []chatMessage{
 			{
-				Role: "system",
+				Role:    "system",
 				Content: []contentPart{{Type: "text", Text: prompt.VisionSystem}},
 			},
 			{
@@ -155,19 +155,6 @@ func (a *OpenAIAnalyzer) Analyze(ctx context.Context, imagePath string) (*models
 		return nil, fmt.Errorf("vision returned no clothing items")
 	}
 	return &outfit, nil
-}
-
-func mimeFromExt(ext string) string {
-	switch strings.ToLower(ext) {
-	case ".png":
-		return "image/png"
-	case ".webp":
-		return "image/webp"
-	case ".gif":
-		return "image/gif"
-	default:
-		return "image/jpeg"
-	}
 }
 
 func stripCodeFence(s string) string {

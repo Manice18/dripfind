@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/joho/godotenv"
@@ -37,7 +38,6 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// Connect with a fresh context so a stray signal during boot can't cancel the ping.
 	pool, err := database.Connect(context.Background(), cfg.PostgresDSN)
 	if err != nil {
 		log.Error("database", "error", err)
@@ -45,16 +45,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Schema is owned by the API process; workers only consume jobs.
-	imagesDir := cfg.ImagesDir
-	if !filepath.IsAbs(imagesDir) {
-		imagesDir = filepath.Join(findBackendRoot(), imagesDir)
-	}
-	localStore, err := storage.NewLocalStorage(imagesDir)
+	imageStore, err := buildStorage(context.Background(), cfg)
 	if err != nil {
 		log.Error("storage", "error", err)
 		os.Exit(1)
 	}
+	log.Info("storage ready", "backend", strings.ToLower(cfg.StorageBackend))
 
 	var analyzer vision.Analyzer
 	if cfg.DemoMode || cfg.OpenAIAPIKey == "" {
@@ -83,7 +79,7 @@ func main() {
 		Store:     outfitStore,
 		Extractor: pinterest.NewExtractor(),
 		Download:  imagedl.NewDownloader(),
-		Storage:   localStore,
+		Storage:   imageStore,
 		Vision:    analyzer,
 		Search:    search.NewEngine(log, providers...),
 		Ranker:    ranking.NewScoreRanker(),
@@ -104,6 +100,25 @@ func main() {
 		"demo_mode", cfg.DemoMode,
 	)
 	worker.Run(ctx)
+}
+
+func buildStorage(ctx context.Context, cfg *config.Config) (storage.ImageStorage, error) {
+	imagesDir := cfg.ImagesDir
+	if !filepath.IsAbs(imagesDir) {
+		imagesDir = filepath.Join(findBackendRoot(), imagesDir)
+	}
+	return storage.BackendFromConfig(ctx, cfg.StorageBackend, storage.LocalConfig{
+		Dir:        imagesDir,
+		PublicBase: "/images",
+	}, storage.S3Config{
+		Endpoint:       cfg.S3Endpoint,
+		Region:         cfg.S3Region,
+		Bucket:         cfg.S3Bucket,
+		AccessKey:      cfg.S3AccessKeyID,
+		SecretKey:      cfg.S3SecretAccessKey,
+		PublicBaseURL:  cfg.S3PublicBaseURL,
+		ForcePathStyle: cfg.S3ForcePathStyle,
+	})
 }
 
 func findBackendRoot() string {
