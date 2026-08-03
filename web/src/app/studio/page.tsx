@@ -1,17 +1,19 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+
+import { useMutation, useQuery } from "@tanstack/react-query";
+
 import { AnalyzeForm } from "@/components/analyze-form";
 import { useAuth } from "@/components/auth-provider";
 import { HeroVisual } from "@/components/hero-visual";
 import { LoadingState } from "@/components/loading-state";
 import { OutfitResult } from "@/components/outfit-result";
 import { SiteHeader } from "@/components/site-header";
-import { api } from "@/lib/api";
 import { SessionLoader } from "@/components/session-loader";
+import { api } from "@/lib/api";
 
 function AppInner() {
   const router = useRouter();
@@ -54,7 +56,11 @@ function AppInner() {
   });
 
   useEffect(() => {
-    if (!id || result.data?.status === "completed" || result.data?.status === "failed") {
+    if (
+      !id ||
+      result.data?.status === "completed" ||
+      result.data?.status === "failed"
+    ) {
       return;
     }
     const t = setInterval(() => setStage((s) => (s + 1) % 5), 2200);
@@ -78,7 +84,8 @@ function AppInner() {
     if (analyze.isError) return (analyze.error as Error).message;
     if (analyzeUpload.isError) return (analyzeUpload.error as Error).message;
     if (result.isError) return (result.error as Error).message;
-    if (result.data?.status === "failed") return result.data.error_message || "Analysis failed";
+    if (result.data?.status === "failed")
+      return result.data.error_message || "Analysis failed";
     return "";
   }, [
     analyze.isError,

@@ -25,7 +25,12 @@ function ProductCard({ product }: { product: Product }) {
     >
       <div className="product-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={product.image} alt={product.title} loading="lazy" decoding="async" />
+        <img
+          src={product.image}
+          alt={product.title}
+          loading="lazy"
+          decoding="async"
+        />
         <span className="match">{Math.round(product.match_score)}% match</span>
       </div>
       <div className="product-meta">
@@ -50,7 +55,8 @@ function ItemBlock({ item }: { item: ClothingItem }) {
             {item.color} {item.material} · {item.fit}
           </h3>
           <p className="muted">
-            {item.pattern} pattern · {Math.round(item.confidence * 100)}% confidence
+            {item.pattern} pattern · {Math.round(item.confidence * 100)}%
+            confidence
           </p>
         </div>
       </header>
@@ -73,7 +79,11 @@ export function OutfitResult({ outfit }: { outfit: Outfit }) {
       <aside className="result-summary">
         <div className="summary-media">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mediaURL(outfit.image_url)} alt="Analyzed outfit" decoding="async" />
+          <img
+            src={mediaURL(outfit.image_url)}
+            alt="Analyzed outfit"
+            decoding="async"
+          />
         </div>
         <div className="summary-copy">
           <p className="eyebrow">Detected look</p>

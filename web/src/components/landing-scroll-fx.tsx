@@ -15,10 +15,10 @@ export function LandingScrollFX() {
     const reduced = prefersReducedMotion();
 
     const sections = Array.from(
-      document.querySelectorAll<HTMLElement>(SECTION_SEL)
+      document.querySelectorAll<HTMLElement>(SECTION_SEL),
     );
     const links = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>(LINK_SEL)
+      document.querySelectorAll<HTMLAnchorElement>(LINK_SEL),
     );
 
     const setActive = (id: string) => {
@@ -58,7 +58,7 @@ export function LandingScrollFX() {
           }
         }
       },
-      { threshold: 0.16, rootMargin: "0px 0px -10% 0px" }
+      { threshold: 0.16, rootMargin: "0px 0px -10% 0px" },
     );
 
     const navObs = new IntersectionObserver(
@@ -69,7 +69,7 @@ export function LandingScrollFX() {
         const top = visible[0]?.target;
         if (top?.id) setActive(top.id);
       },
-      { threshold: [0.25, 0.45, 0.6], rootMargin: "-18% 0px -45% 0px" }
+      { threshold: [0.25, 0.45, 0.6], rootMargin: "-18% 0px -45% 0px" },
     );
 
     for (const section of sections) {
@@ -91,9 +91,12 @@ export function LandingScrollFX() {
         block: "start",
       });
       setActive(href.slice(1));
-      window.setTimeout(() => {
-        target.focus({ preventScroll: true });
-      }, reduced ? 0 : 420);
+      window.setTimeout(
+        () => {
+          target.focus({ preventScroll: true });
+        },
+        reduced ? 0 : 420,
+      );
     };
 
     for (const link of links) {

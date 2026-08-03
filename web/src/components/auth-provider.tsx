@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
 import { api, type AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ user, loading, refresh, setUser, logout, deleteAccount }),
-    [user, loading, refresh, logout, deleteAccount]
+    [user, loading, refresh, logout, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

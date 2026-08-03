@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+
 import { useAuth } from "@/components/auth-provider";
 import { SessionLoader } from "@/components/session-loader";
 import { SiteHeader } from "@/components/site-header";
@@ -15,7 +16,9 @@ function AuthInner() {
   const params = useSearchParams();
   const { setUser, user, loading: authLoading } = useAuth();
 
-  const modeFromUrl = (params.get("mode") === "signup" ? "signup" : "login") as Mode;
+  const modeFromUrl = (
+    params.get("mode") === "signup" ? "signup" : "login"
+  ) as Mode;
   const oauthError = params.get("error");
 
   const [mode, setMode] = useState<Mode>(modeFromUrl);
@@ -27,7 +30,8 @@ function AuthInner() {
 
   const title = mode === "signup" ? "Create your account" : "Welcome back";
   const subtitle = useMemo(() => {
-    if (mode === "signup") return "Save looks, reopen history, and shop your wardrobe.";
+    if (mode === "signup")
+      return "Save looks, reopen history, and shop your wardrobe.";
     return "Sign in to continue finding shoppable outfits.";
   }, [mode]);
 
@@ -119,13 +123,24 @@ function AuthInner() {
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                autoComplete={
+                  mode === "signup" ? "new-password" : "current-password"
+                }
                 aria-invalid={!!error}
                 aria-describedby={error ? "auth-error" : undefined}
               />
             </label>
-            <button type="submit" className="analyze-cta" disabled={busy} aria-busy={busy}>
-              {busy ? "Working…" : mode === "signup" ? "Create account" : "Log in"}
+            <button
+              type="submit"
+              className="analyze-cta"
+              disabled={busy}
+              aria-busy={busy}
+            >
+              {busy
+                ? "Working…"
+                : mode === "signup"
+                  ? "Create account"
+                  : "Log in"}
             </button>
           </form>
 

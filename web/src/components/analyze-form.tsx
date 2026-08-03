@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useRef, useState } from "react";
 
-const ACCEPT = "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif";
+const ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif";
 const MAX_BYTES = 12 * 1024 * 1024;
 
 export function AnalyzeForm({
@@ -64,7 +65,10 @@ export function AnalyzeForm({
 
   return (
     <div className="analyze-stack">
-      <form onSubmit={handleUrlSubmit} className="analyze-path analyze-path-url">
+      <form
+        onSubmit={handleUrlSubmit}
+        className="analyze-path analyze-path-url"
+      >
         <header className="analyze-path-head">
           <p className="analyze-path-label">Pinterest</p>
           <p className="analyze-path-hint">Paste a pin URL</p>
@@ -83,7 +87,11 @@ export function AnalyzeForm({
             onChange={(e) => setUrl(e.target.value)}
             disabled={loading}
           />
-          <button type="submit" className="analyze-cta" disabled={loading || !url.trim()}>
+          <button
+            type="submit"
+            className="analyze-cta"
+            disabled={loading || !url.trim()}
+          >
             {loading ? "Reading look…" : "Recreate"}
           </button>
         </div>
@@ -96,7 +104,9 @@ export function AnalyzeForm({
       <div className="analyze-path analyze-path-photo">
         <header className="analyze-path-head">
           <p className="analyze-path-label">Photo</p>
-          <p className="analyze-path-hint">Drop, browse, or paste a screenshot</p>
+          <p className="analyze-path-hint">
+            Drop, browse, or paste a screenshot
+          </p>
         </header>
         <div
           className={`dropzone${dragOver ? " is-dragover" : ""}${preview ? " has-preview" : ""}`}

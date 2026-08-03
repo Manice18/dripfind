@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree, Syne } from "next/font/google";
+
 import { Providers } from "@/components/providers";
+
 import "./globals.css";
 
 const syne = Syne({

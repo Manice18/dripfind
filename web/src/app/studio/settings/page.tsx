@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { useAuth } from "@/components/auth-provider";
 import { IconLogout } from "@/components/icons";
 import { SessionLoader } from "@/components/session-loader";
@@ -154,8 +155,8 @@ export default function SettingsPage() {
               <li>Every outfit analysis and match result</li>
             </ul>
             <p className="settings-delete-irreversible">
-              This cannot be undone. You will need to create a new account to use LOOKBOOK
-              again.
+              This cannot be undone. You will need to create a new account to
+              use LOOKBOOK again.
             </p>
           </div>
           {error && (

@@ -1,7 +1,9 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { api, mediaURL } from "@/lib/api";
 
 export function HistoryList() {
@@ -39,7 +41,12 @@ export function HistoryList() {
           <Link href={`/studio?id=${entry.outfit_id}`} className="history-link">
             {entry.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaURL(entry.image_url)} alt="" loading="lazy" decoding="async" />
+              <img
+                src={mediaURL(entry.image_url)}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
               <div className="history-placeholder" />
             )}

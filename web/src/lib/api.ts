@@ -12,7 +12,8 @@ export type AuthUser = {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
   if (!isFormData && !headers.has("Content-Type") && init?.body) {
     headers.set("Content-Type", "application/json");
   }
@@ -25,7 +26,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error ?? `Request failed (${res.status})`);
+    throw new Error(
+      (data as { error?: string }).error ?? `Request failed (${res.status})`,
+    );
   }
   return data as T;
 }

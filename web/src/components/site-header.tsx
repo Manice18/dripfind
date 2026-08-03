@@ -1,19 +1,30 @@
 "use client";
 
 import Link from "next/link";
+
 import { useAuth } from "@/components/auth-provider";
 import { IconLogout, IconUser } from "@/components/icons";
 
 type HeaderVariant = "landing" | "studio" | "auth";
 
-export function SiteHeader({ variant = "landing" }: { variant?: HeaderVariant }) {
+export function SiteHeader({
+  variant = "landing",
+}: {
+  variant?: HeaderVariant;
+}) {
   const { user, loading, logout } = useAuth();
   const displayName = user?.name || user?.email || "Account";
   const navLabel =
-    variant === "landing" ? "Account" : variant === "auth" ? "Account" : "Studio";
+    variant === "landing"
+      ? "Account"
+      : variant === "auth"
+        ? "Account"
+        : "Studio";
 
   return (
-    <header className={`site-header${variant === "landing" ? " site-header-landing" : ""}`}>
+    <header
+      className={`site-header${variant === "landing" ? " site-header-landing" : ""}`}
+    >
       <Link href={user ? "/studio" : "/"} className="brand">
         LOOKBOOK
       </Link>
@@ -34,7 +45,11 @@ export function SiteHeader({ variant = "landing" }: { variant?: HeaderVariant })
           </>
         )}
         {loading && (
-          <span className="nav-status" role="status" aria-label="Checking session">
+          <span
+            className="nav-status"
+            role="status"
+            aria-label="Checking session"
+          >
             <span className="nav-status-spinner" aria-hidden="true" />
           </span>
         )}

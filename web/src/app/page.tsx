@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { HeroVisual } from "@/components/hero-visual";
 import { LandingGate } from "@/components/landing-gate";
 import { LandingScrollFX } from "@/components/landing-scroll-fx";
@@ -15,20 +16,30 @@ export default function LandingPage() {
 
         <SiteHeader variant="landing" />
 
-        <section className="hero landing-hero" aria-labelledby="landing-hero-heading">
+        <section
+          className="hero landing-hero"
+          aria-labelledby="landing-hero-heading"
+        >
           <HeroVisual priority />
           <div className="hero-copy">
             <p className="brand-mark">LOOKBOOK</p>
-            <h1 id="landing-hero-heading">Turn any look into a shoppable wardrobe.</h1>
+            <h1 id="landing-hero-heading">
+              Turn any look into a shoppable wardrobe.
+            </h1>
             <p className="lede">
-              Paste a Pinterest pin or drop a photo. We read the outfit, then shop
-              it across Myntra, Snitch, Off Duty, Bewakoof, Westside, and more.
+              Paste a Pinterest pin or drop a photo. We read the outfit, then
+              shop it across Myntra, Snitch, Off Duty, Bewakoof, Westside, and
+              more.
             </p>
             <div className="hero-actions">
               <Link href="/auth?mode=signup" className="analyze-cta" prefetch>
                 Get started
               </Link>
-              <Link href="/auth?mode=login" className="ghost-link hero-secondary" prefetch>
+              <Link
+                href="/auth?mode=login"
+                className="ghost-link hero-secondary"
+                prefetch
+              >
                 I already have an account
               </Link>
             </div>
@@ -74,7 +85,11 @@ export default function LandingPage() {
           <p className="lede narrow">
             A short walkthrough of paste → analyze → shop — coming soon.
           </p>
-          <div className="video-slot" role="img" aria-label="Product demo video coming soon">
+          <div
+            className="video-slot"
+            role="img"
+            aria-label="Product demo video coming soon"
+          >
             <div className="video-slot-inner">
               <span className="video-label">Coming soon</span>
               <p>See paste, analyze, and shop in one pass.</p>
@@ -89,7 +104,9 @@ export default function LandingPage() {
           aria-labelledby="landing-retailers-heading"
           tabIndex={-1}
         >
-          <h2 id="landing-retailers-heading">Built for the stores you actually browse.</h2>
+          <h2 id="landing-retailers-heading">
+            Built for the stores you actually browse.
+          </h2>
           <p className="lede narrow">
             Homegrown brands and big marketplaces in one pass — so a street look
             doesn’t stop at a single site.
