@@ -1,7 +1,9 @@
 "use client";
 
 import type { ClothingItem, Outfit, Product } from "@/types/outfit";
+import { affiliateProductURL, isAffiliateProduct } from "@/lib/affiliate";
 import { mediaURL } from "@/lib/api";
+import { normalizeProductURL } from "@/lib/product-url";
 
 function formatPrice(p: Product) {
   try {
@@ -16,12 +18,19 @@ function formatPrice(p: Product) {
 }
 
 function ProductCard({ product }: { product: Product }) {
+  const rawURL = normalizeProductURL(product.website, product.url);
+  const href = affiliateProductURL(product.website, rawURL);
+  const affiliated = isAffiliateProduct(product.website, rawURL);
+
   return (
     <a
       className="product-card"
-      href={product.url}
+      href={href}
       target="_blank"
-      rel="noopener noreferrer"
+      rel="noopener noreferrer sponsored"
+      data-website={product.website}
+      data-affiliate={affiliated ? "yes" : "no"}
+      title={affiliated ? "Opens via inr.deals affiliate link" : undefined}
     >
       <div className="product-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -38,7 +47,10 @@ function ProductCard({ product }: { product: Product }) {
         <h4>{product.title}</h4>
         <div className="row">
           <strong>{formatPrice(product)}</strong>
-          <span className="site">{product.website}</span>
+          <span className="site">
+            {product.website}
+            {affiliated ? " · deal" : ""}
+          </span>
         </div>
       </div>
     </a>

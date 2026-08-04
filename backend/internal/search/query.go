@@ -174,4 +174,10 @@ func EnsureProductDefaults(p *models.Product) {
 	if p.Title == "" {
 		p.Title = p.Website + " item"
 	}
+	// Fix retailer-specific URL quirks (also covers SerpAPI / older providers).
+	if strings.EqualFold(p.Website, "bewakoof") || strings.Contains(strings.ToLower(p.URL), "bewakoof.com") {
+		if fixed := bewakoofProductURL(p.URL); fixed != "" {
+			p.URL = fixed
+		}
+	}
 }

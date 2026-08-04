@@ -89,8 +89,8 @@ func (p *BewakoofProvider) Search(ctx context.Context, item models.ClothingItem,
 		if slug == "" {
 			slug = r.URL
 		}
-		link := "https://www.bewakoof.com/" + strings.TrimPrefix(slug, "/")
-		if slug == "" {
+		link := bewakoofProductURL(slug)
+		if link == "" {
 			link = searchURL
 		}
 
@@ -109,4 +109,44 @@ func (p *BewakoofProvider) Search(ctx context.Context, item models.ClothingItem,
 		return nil, fmt.Errorf("bewakoof: no products for %q", query)
 	}
 	return out, nil
+}
+
+// bewakoofProductURL normalizes PDP paths. Bewakoof product pages are under /p/<slug>;
+// search payloads often return just the slug (or a relative path without /p/), which
+// 404s if joined as https://www.bewakoof.com/<slug>.
+func bewakoofProductURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+
+	// Already absolute.
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		u, err := url.Parse(raw)
+		if err != nil || u.Host == "" {
+			return raw
+		}
+		u.Path = ensureBewakoofPDPPath(u.Path)
+		return u.String()
+	}
+
+	path := ensureBewakoofPDPPath(raw)
+	return "https://www.bewakoof.com" + path
+}
+
+func ensureBewakoofPDPPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	// Already a product page (or another non-root path we should keep).
+	lower := strings.ToLower(path)
+	if strings.HasPrefix(lower, "/p/") || strings.HasPrefix(lower, "/search") {
+		return path
+	}
+	// Bare slug from API → /p/<slug>
+	return "/p" + path
 }
