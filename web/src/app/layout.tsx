@@ -1,7 +1,8 @@
-import type { Metadata, Viewport } from "next";
+import type { Viewport } from "next";
 import { Figtree, Syne } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { constructMetaData } from "@/lib/metadata";
 
 import "./globals.css";
 
@@ -21,10 +22,7 @@ const figtree = Figtree({
   preload: true,
 });
 
-export const metadata: Metadata = {
-  title: "DRIPFIND — AI Outfit Finder",
-  description: "Turn any Pinterest outfit into a shoppable wardrobe.",
-};
+export const metadata = constructMetaData();
 
 export const viewport: Viewport = {
   width: "device-width",
