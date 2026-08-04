@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	SessionCookieName = "lookbook_session"
+	SessionCookieName = "dripfind_session"
 	SessionTTL        = 30 * 24 * time.Hour
 	OTPTTL            = 10 * time.Minute
 	MaxOTPAttempts    = 5

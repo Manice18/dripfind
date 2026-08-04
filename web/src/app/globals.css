@@ -386,7 +386,7 @@ html.js-landing-motion .site-header-landing {
   font-family: var(--font-display), sans-serif;
   font-weight: 800;
   letter-spacing: 0.04em;
-  /* Fit full “LOOKBOOK” inside the hero at phone → tablet widths */
+  /* Fit full “DRIPFIND” inside the hero at phone → tablet widths */
   font-size: clamp(1.5rem, 9.2vw, 4.5rem);
   line-height: 1;
   margin: 0 0 1rem;

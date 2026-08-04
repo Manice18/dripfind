@@ -72,7 +72,7 @@ export default function SettingsPage() {
 
       <section className="settings-section" aria-labelledby="settings-heading">
         <h1 id="settings-heading">Account</h1>
-        <p className="lede narrow">Your LOOKBOOK profile and session.</p>
+        <p className="lede narrow">Your DRIPFIND profile and session.</p>
 
         <dl className="settings-list">
           <div>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
             </ul>
             <p className="settings-delete-irreversible">
               This cannot be undone. You will need to create a new account to
-              use LOOKBOOK again.
+              use DRIPFIND again.
             </p>
           </div>
           {error && (

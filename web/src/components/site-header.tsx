@@ -26,7 +26,7 @@ export function SiteHeader({
       className={`site-header${variant === "landing" ? " site-header-landing" : ""}`}
     >
       <Link href={user ? "/studio" : "/"} className="brand">
-        LOOKBOOK
+        DRIPFIND
       </Link>
 
       {variant === "landing" && (

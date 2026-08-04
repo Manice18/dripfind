@@ -1,4 +1,4 @@
-module github.com/manice18/outfit_finder/backend
+module github.com/manice18/dripfind/backend
 
 go 1.25.0
 

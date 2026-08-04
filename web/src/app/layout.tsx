@@ -22,7 +22,7 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: "LOOKBOOK — AI Outfit Finder",
+  title: "DRIPFIND — AI Outfit Finder",
   description: "Turn any Pinterest outfit into a shoppable wardrobe.",
 };
 

@@ -150,7 +150,7 @@ func (s *Service) handleGoogleStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     "lookbook_oauth_state",
+		Name:     "dripfind_oauth_state",
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
@@ -168,13 +168,13 @@ func (s *Service) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, FrontendRedirect(s.FrontendURL, "/auth", q), http.StatusFound)
 	}
 
-	stateCookie, err := r.Cookie("lookbook_oauth_state")
+	stateCookie, err := r.Cookie("dripfind_oauth_state")
 	if err != nil || stateCookie.Value == "" || stateCookie.Value != r.URL.Query().Get("state") {
 		fail("invalid_oauth_state")
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     "lookbook_oauth_state",
+		Name:     "dripfind_oauth_state",
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,

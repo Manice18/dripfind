@@ -1,0 +1,139 @@
+# Production stack. Deployed to /opt/dripfind/compose.prod.yml on the droplet.
+# This copy is committed for reference; CI does not read it from the repo.
+#
+# Usage on the droplet:
+#   docker compose --env-file .env.tag -f compose.prod.yml pull
+#   docker compose --env-file .env.tag -f compose.prod.yml up -d
+#
+# Requires a sibling `.env` file holding application secrets (see DEPLOYMENT.md).
+#
+# Topology (all ports bound to 127.0.0.1 — Nginx is the only public entrypoint):
+#   api      → 127.0.0.1:8080
+#   web      → 127.0.0.1:3000
+#   minio    → 127.0.0.1:9000 (S3 API), console on 127.0.0.1:9001 (optional)
+#   postgres → not published (Option B only; containers reach it as postgres:5432)
+#   worker   → no ports
+
+services:
+  # ---------------------------------------------------------------------------
+  # Object storage — MinIO (S3-compatible)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # API — Go HTTP server (migrations, auth, enqueue jobs)
+  # ---------------------------------------------------------------------------
+  api:
+    image: ghcr.io/manice18/dripfind-api:${TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    # The 127.0.0.1 prefix is critical. "8080:8080" binds 0.0.0.0 and Docker's
+    # iptables rules are evaluated BEFORE ufw — publishing the API publicly
+    # regardless of firewall config. Loopback means only Nginx can reach it.
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Worker — same image as api; claims Postgres-backed analysis jobs
+  # ---------------------------------------------------------------------------
+  worker:
+    image: ghcr.io/manice18/dripfind-api:${TAG:-latest}
+    restart: unless-stopped
+    entrypoint: ["/app/worker"]
+    env_file: .env
+    depends_on:
+      api:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Next.js (standalone)
+  # ---------------------------------------------------------------------------
+  web:
+    image: ghcr.io/manice18/dripfind-web:${TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Postgres on the droplet (Option B only).
+  # Comment this block out (or delete it) if you use DigitalOcean Managed PG.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Deliberately NO public ports: — containers use hostname `postgres`.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  minio_data:
+  postgres_data: # uncomment with the postgres service above

@@ -31,7 +31,8 @@ postgres_data/
 .run/
 
 # other
-.github/
+.github/hooks/
+.github/skills/
 .cursor/
 
 minio.license

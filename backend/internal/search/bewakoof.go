@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/manice18/outfit_finder/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/models"
 )
 
 var nextDataRe = regexp.MustCompile(`(?s)<script id="__NEXT_DATA__" type="application/json">(.*?)</script>`)

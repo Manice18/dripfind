@@ -3,7 +3,7 @@
 RUN_DIR := .run
 MIGRATIONS_DIR := backend/migrations
 POSTGRES_USER ?= outfit
-POSTGRES_DB ?= outfitfinder
+POSTGRES_DB ?= dripfind
 
 up:
 	docker compose up -d postgres
@@ -159,7 +159,7 @@ start: up
 			_ $(CURDIR)/$(RUN_DIR)/web.log $(CURDIR)/$(RUN_DIR)/web.pid; \
 		echo "Web started → $(RUN_DIR)/web.log"; \
 	fi
-	@echo "LOOKBOOK: http://localhost:3000  ·  API: http://localhost:8080"
+	@echo "DRIPFIND: http://localhost:3000  ·  API: http://localhost:8080"
 
 # Stop API, worker, web, and Postgres.
 stop:

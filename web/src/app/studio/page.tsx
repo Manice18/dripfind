@@ -109,7 +109,7 @@ function AppInner() {
         <section className="hero">
           <HeroVisual />
           <div className="hero-copy">
-            <p className="brand-mark">LOOKBOOK</p>
+            <p className="brand-mark">DRIPFIND</p>
             <h1>Turn any look into a shoppable wardrobe.</h1>
             <p className="lede">
               Paste a Pinterest pin, or drop a photo / screenshot. We read the

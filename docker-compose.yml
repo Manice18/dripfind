@@ -1,26 +1,29 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: outfitfinder-postgres
+    container_name: dripfind-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-outfit}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-outfit}
-      POSTGRES_DB: ${POSTGRES_DB:-outfitfinder}
+      POSTGRES_DB: ${POSTGRES_DB:-dripfind}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-outfit} -d ${POSTGRES_DB:-outfitfinder}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-outfit} -d ${POSTGRES_DB:-dripfind}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
 
   adminer:
     image: adminer:4
-    container_name: outfitfinder-adminer
+    container_name: dripfind-adminer
     restart: unless-stopped
     ports:
       - "8081:8080"

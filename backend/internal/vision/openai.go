@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/manice18/outfit_finder/backend/internal/models"
-	"github.com/manice18/outfit_finder/backend/internal/prompt"
+	"github.com/manice18/dripfind/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/prompt"
 )
 
 type Analyzer interface {

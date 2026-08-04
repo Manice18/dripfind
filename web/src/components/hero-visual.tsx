@@ -5,7 +5,7 @@ export function HeroVisual({ priority = false }: { priority?: boolean }) {
     <div className="hero-visual" aria-hidden="true">
       <div className="hero-photo">
         <Image
-          src="/heroes/lookbook-hero.jpg"
+          src="/heroes/dripfind-hero.jpg"
           alt=""
           fill
           priority={priority}

@@ -13,12 +13,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
-	"github.com/manice18/outfit_finder/backend/internal/auth"
-	"github.com/manice18/outfit_finder/backend/internal/history"
-	"github.com/manice18/outfit_finder/backend/internal/jobs"
-	"github.com/manice18/outfit_finder/backend/internal/models"
-	"github.com/manice18/outfit_finder/backend/internal/pinterest"
-	"github.com/manice18/outfit_finder/backend/internal/storage"
+	"github.com/manice18/dripfind/backend/internal/auth"
+	"github.com/manice18/dripfind/backend/internal/history"
+	"github.com/manice18/dripfind/backend/internal/jobs"
+	"github.com/manice18/dripfind/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/pinterest"
+	"github.com/manice18/dripfind/backend/internal/storage"
 )
 
 type Server struct {

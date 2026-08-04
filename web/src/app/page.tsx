@@ -22,7 +22,7 @@ export default function LandingPage() {
         >
           <HeroVisual priority />
           <div className="hero-copy">
-            <p className="brand-mark">LOOKBOOK</p>
+            <p className="brand-mark">DRIPFIND</p>
             <h1 id="landing-hero-heading">
               Turn any look into a shoppable wardrobe.
             </h1>
@@ -81,7 +81,7 @@ export default function LandingPage() {
           aria-labelledby="landing-demo-heading"
           tabIndex={-1}
         >
-          <h2 id="landing-demo-heading">Watch LOOKBOOK in action.</h2>
+          <h2 id="landing-demo-heading">Watch DRIPFIND in action.</h2>
           <p className="lede narrow">
             A short walkthrough of paste → analyze → shop — coming soon.
           </p>
@@ -138,7 +138,7 @@ export default function LandingPage() {
         </section>
 
         <footer className="landing-footer">
-          <span>LOOKBOOK</span>
+          <span>DRIPFIND</span>
           <span className="muted">AI outfit finder</span>
         </footer>
       </main>

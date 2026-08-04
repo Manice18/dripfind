@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/manice18/outfit_finder/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/models"
 )
 
 // SerpShoppingProvider uses SerpAPI Google Shopping when SERPAPI_KEY is set.

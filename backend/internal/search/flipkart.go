@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/manice18/outfit_finder/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/models"
 )
 
 var flipkartPriceRe = regexp.MustCompile(`₹\s*[\d,]+`)

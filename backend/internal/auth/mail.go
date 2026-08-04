@@ -32,8 +32,8 @@ type SMTPMailer struct {
 
 func (m SMTPMailer) SendOTP(_ context.Context, to, code string) error {
 	addr := m.Host + ":" + m.Port
-	subject := "Your LOOKBOOK login code"
-	body := fmt.Sprintf("Your LOOKBOOK verification code is %s.\n\nIt expires in 10 minutes.\n", code)
+	subject := "Your DRIPFIND login code"
+	body := fmt.Sprintf("Your DRIPFIND verification code is %s.\n\nIt expires in 10 minutes.\n", code)
 	msg := strings.Join([]string{
 		"From: " + m.From,
 		"To: " + to,

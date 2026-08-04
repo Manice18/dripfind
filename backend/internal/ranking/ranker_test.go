@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/manice18/outfit_finder/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/models"
 )
 
 func TestRejectWomensWhenMale(t *testing.T) {

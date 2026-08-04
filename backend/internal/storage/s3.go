@@ -19,7 +19,7 @@ type S3Config struct {
 	Bucket         string
 	AccessKey      string
 	SecretKey      string
-	PublicBaseURL  string // e.g. http://localhost:9000/lookbook
+	PublicBaseURL  string // e.g. http://localhost:9000/dripfind
 	ForcePathStyle bool
 	PresignTTL     time.Duration // used when PublicBaseURL is empty
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/manice18/outfit_finder/backend/internal/safehttp"
+	"github.com/manice18/dripfind/backend/internal/safehttp"
 )
 
 type Downloader struct {
@@ -39,7 +39,7 @@ func (d *Downloader) Download(imageURL string) (*DownloadResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; OutfitFinder/1.0)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Dripfind/1.0)")
 	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8")
 
 	resp, err := d.client.Do(req)

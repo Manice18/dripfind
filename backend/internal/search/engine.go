@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/manice18/outfit_finder/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/models"
 )
 
 type Provider interface {

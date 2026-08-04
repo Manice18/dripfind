@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/manice18/outfit_finder/backend/internal/history"
+	"github.com/manice18/dripfind/backend/internal/history"
 )
 
 // Runner executes a claimed analysis job.

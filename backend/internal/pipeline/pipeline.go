@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/manice18/outfit_finder/backend/internal/history"
-	imagedl "github.com/manice18/outfit_finder/backend/internal/image"
-	"github.com/manice18/outfit_finder/backend/internal/models"
-	"github.com/manice18/outfit_finder/backend/internal/pinterest"
-	"github.com/manice18/outfit_finder/backend/internal/ranking"
-	"github.com/manice18/outfit_finder/backend/internal/search"
-	"github.com/manice18/outfit_finder/backend/internal/storage"
-	"github.com/manice18/outfit_finder/backend/internal/vision"
+	"github.com/manice18/dripfind/backend/internal/history"
+	imagedl "github.com/manice18/dripfind/backend/internal/image"
+	"github.com/manice18/dripfind/backend/internal/models"
+	"github.com/manice18/dripfind/backend/internal/pinterest"
+	"github.com/manice18/dripfind/backend/internal/ranking"
+	"github.com/manice18/dripfind/backend/internal/search"
+	"github.com/manice18/dripfind/backend/internal/storage"
+	"github.com/manice18/dripfind/backend/internal/vision"
 )
 
 type Pipeline struct {

@@ -46,7 +46,7 @@ func Load() (*Config, error) {
 	port := getEnv("POSTGRES_PORT", "5432")
 	user := getEnv("POSTGRES_USER", "outfit")
 	pass := getEnv("POSTGRES_PASSWORD", "outfit")
-	db := getEnv("POSTGRES_DB", "outfitfinder")
+	db := getEnv("POSTGRES_DB", "dripfind")
 	ssl := getEnv("POSTGRES_SSLMODE", "disable")
 
 	dsn := getEnv("DATABASE_URL", fmt.Sprintf(
@@ -79,17 +79,17 @@ func Load() (*Config, error) {
 		SMTPPort:           getEnv("SMTP_PORT", "587"),
 		SMTPUser:           os.Getenv("SMTP_USER"),
 		SMTPPassword:       os.Getenv("SMTP_PASSWORD"),
-		SMTPFrom:           getEnv("SMTP_FROM", "LOOKBOOK <noreply@lookbook.local>"),
+		SMTPFrom:           getEnv("SMTP_FROM", "DRIPFIND <noreply@dripfind.local>"),
 		WorkerConcurrency:  getEnvInt("WORKER_CONCURRENCY", 4),
 		JobMaxAttempts:     getEnvInt("JOB_MAX_ATTEMPTS", 3),
 
 		StorageBackend:    getEnv("STORAGE_BACKEND", "s3"),
 		S3Endpoint:        getEnv("S3_ENDPOINT", "http://localhost:9000"),
 		S3Region:          getEnv("S3_REGION", "us-east-1"),
-		S3Bucket:          getEnv("S3_BUCKET", "lookbook"),
+		S3Bucket:          getEnv("S3_BUCKET", "dripfind"),
 		S3AccessKeyID:     getEnv("S3_ACCESS_KEY_ID", "minioadmin"),
 		S3SecretAccessKey: getEnv("S3_SECRET_ACCESS_KEY", "minioadmin"),
-		S3PublicBaseURL:   getEnv("S3_PUBLIC_BASE_URL", "http://localhost:9000/lookbook"),
+		S3PublicBaseURL:   getEnv("S3_PUBLIC_BASE_URL", "http://localhost:9000/dripfind"),
 		S3ForcePathStyle:  getEnvBool("S3_FORCE_PATH_STYLE", true),
 	}
 

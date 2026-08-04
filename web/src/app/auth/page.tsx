@@ -175,7 +175,7 @@ function AuthInner() {
           </p>
 
           <p className="auth-back">
-            <Link href="/">← Back to LOOKBOOK</Link>
+            <Link href="/">← Back to DRIPFIND</Link>
           </p>
         </div>
       </section>

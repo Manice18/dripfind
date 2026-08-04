@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/manice18/outfit_finder/backend/internal/api"
-	"github.com/manice18/outfit_finder/backend/internal/auth"
-	"github.com/manice18/outfit_finder/backend/internal/config"
-	"github.com/manice18/outfit_finder/backend/internal/database"
-	"github.com/manice18/outfit_finder/backend/internal/history"
-	"github.com/manice18/outfit_finder/backend/internal/jobs"
-	"github.com/manice18/outfit_finder/backend/internal/storage"
+	"github.com/manice18/dripfind/backend/internal/api"
+	"github.com/manice18/dripfind/backend/internal/auth"
+	"github.com/manice18/dripfind/backend/internal/config"
+	"github.com/manice18/dripfind/backend/internal/database"
+	"github.com/manice18/dripfind/backend/internal/history"
+	"github.com/manice18/dripfind/backend/internal/jobs"
+	"github.com/manice18/dripfind/backend/internal/storage"
 )
 
 func main() {

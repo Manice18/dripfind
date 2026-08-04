@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/manice18/outfit_finder/backend/internal/safehttp"
+	"github.com/manice18/dripfind/backend/internal/safehttp"
 )
 
 var (
