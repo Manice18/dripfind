@@ -5,6 +5,25 @@ import { LandingGate } from "@/components/landing-gate";
 import { LandingScrollFX } from "@/components/landing-scroll-fx";
 import { SiteHeader } from "@/components/site-header";
 
+/** Display names for every storefront search provider (see backend/cmd/worker + search/). */
+const RETAILERS = [
+  "Myntra",
+  "Ajio",
+  "Flipkart",
+  "Bewakoof",
+  "H&M",
+  "Snitch",
+  "Veirdo",
+  "Westside",
+  "Off Duty",
+  "Freakins",
+  "Pant Project",
+  "Bear House",
+  "Powerlook",
+  "Bluorng",
+  "Rare Rabbit",
+] as const;
+
 export default function LandingPage() {
   return (
     <LandingGate>
@@ -28,8 +47,12 @@ export default function LandingPage() {
             </h1>
             <p className="lede">
               Paste a Pinterest pin or drop a photo. We read the outfit, then
-              shop it across Myntra, Snitch, Off Duty, Bewakoof, Westside, and
-              more.
+              shop it across{" "}
+              <a className="hero-retailers-link" href="#retailers">
+                Myntra, Ajio, Flipkart, Snitch, Bewakoof, Westside, H&amp;M, and
+                more
+              </a>
+              .
             </p>
             <div className="hero-actions">
               <Link href="/auth?mode=signup" className="analyze-cta" prefetch>
@@ -112,14 +135,11 @@ export default function LandingPage() {
             doesn’t stop at a single site.
           </p>
           <ul className="retailer-row">
-            <li>Myntra</li>
-            <li>Ajio</li>
-            <li>Flipkart</li>
-            <li>Snitch</li>
-            <li>Bewakoof</li>
-            <li>Westside</li>
-            <li>H&M</li>
-            <li>Off Duty</li>
+            {RETAILERS.map((name, i) => (
+              <li key={name} style={{ ["--i" as string]: i }}>
+                {name}
+              </li>
+            ))}
           </ul>
         </section>
 

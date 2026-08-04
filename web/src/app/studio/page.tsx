@@ -113,8 +113,8 @@ function AppInner() {
             <h1>Turn any look into a shoppable wardrobe.</h1>
             <p className="lede">
               Paste a Pinterest pin, or drop a photo / screenshot. We read the
-              outfit, then shop it across Myntra, Snitch, Off Duty, Bewakoof,
-              Westside, and more.
+              outfit, then shop it across Myntra, Ajio, Flipkart, Snitch,
+              Bewakoof, Westside, H&amp;M, and more.
             </p>
             <AnalyzeForm
               onSubmitUrl={(url) => analyze.mutate(url)}

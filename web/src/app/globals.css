@@ -113,6 +113,7 @@ a {
 .ghost-link:focus-visible,
 .google-btn:focus-visible,
 .auth-switch button:focus-visible,
+.auth-back a:focus-visible,
 .dropzone-clear:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
@@ -1538,6 +1539,43 @@ html.js-landing-motion .site-header-landing {
   color: color-mix(in srgb, var(--bone) 78%, transparent);
 }
 
+.hero-retailers-link {
+  color: var(--lime);
+  font-weight: 700;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+  border-radius: 2px;
+  background: linear-gradient(
+    transparent 72%,
+    color-mix(in srgb, var(--lime) 28%, transparent) 0
+  );
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    filter 0.2s ease;
+}
+
+.hero-retailers-link:hover,
+.hero-retailers-link:focus-visible {
+  color: color-mix(in srgb, var(--lime) 82%, white);
+  background: linear-gradient(
+    transparent 68%,
+    color-mix(in srgb, var(--lime) 48%, transparent) 0
+  );
+  filter: brightness(1.06);
+}
+
+.hero-retailers-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+#retailers {
+  scroll-margin-top: 5.5rem;
+}
+
 /* Hero image stays full-bleed; copy sits on the shared rail */
 .landing-hero .hero-copy {
   max-width: var(--landing-rail);
@@ -1684,55 +1722,7 @@ html.js-landing-motion .landing-section-retailers.is-visible .retailer-row li {
   transition:
     opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(1) {
-  transition-delay: 40ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(2) {
-  transition-delay: 70ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(3) {
-  transition-delay: 100ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(4) {
-  transition-delay: 130ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(5) {
-  transition-delay: 160ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(6) {
-  transition-delay: 180ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(7) {
-  transition-delay: 200ms;
-}
-html.js-landing-motion
-  .landing-section-retailers.is-visible
-  .retailer-row
-  li:nth-child(8) {
-  transition-delay: 220ms;
+  transition-delay: calc(40ms + (var(--i, 0) * 28ms));
 }
 
 html.js-landing-motion .landing-section-cta:not(.is-visible) {
@@ -1881,13 +1871,13 @@ html.js-landing-motion .landing-section-cta.is-visible .analyze-cta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem 0;
+  gap: 0.85rem 0;
   color: var(--bone);
   font-family: var(--font-display), sans-serif;
   font-weight: 800;
   letter-spacing: 0.03em;
-  font-size: clamp(1.15rem, 3.4vw, 1.85rem);
-  line-height: 1.15;
+  font-size: clamp(0.98rem, 2.6vw, 1.4rem);
+  line-height: 1.2;
 }
 
 .retailer-row li {
@@ -1901,7 +1891,7 @@ html.js-landing-motion .landing-section-cta.is-visible .analyze-cta {
   content: "";
   width: 1.5px;
   height: 0.72em;
-  margin-inline: 1.1rem;
+  margin-inline: 0.85rem;
   background: var(--lime);
   flex-shrink: 0;
 }
@@ -2113,6 +2103,7 @@ html.js-landing-motion .landing-cta.is-visible::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.65rem;
   min-height: 3.1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -2123,6 +2114,10 @@ html.js-landing-motion .landing-cta.is-visible::before {
   transition:
     border-color 0.2s ease,
     background 0.2s ease;
+}
+
+.google-btn-icon {
+  flex-shrink: 0;
 }
 
 .google-btn:hover {
@@ -2145,12 +2140,70 @@ html.js-landing-motion .landing-cta.is-visible::before {
   padding-block: 0.35rem;
   padding-inline: 0.15rem;
   min-height: var(--touch-min);
+  position: relative;
+  border-radius: 2px;
+  transition:
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-switch button::after {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  right: 0.15rem;
+  bottom: 0.35rem;
+  height: 1.5px;
+  background: var(--lime);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-switch button:hover,
+.auth-switch button:focus-visible {
+  color: color-mix(in srgb, var(--lime) 88%, white);
+  transform: translateY(-1px);
+}
+
+.auth-switch button:hover::after,
+.auth-switch button:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.auth-switch button:active {
+  transform: translateY(0);
 }
 
 .auth-back {
   margin: 1.5rem 0 0;
   font-size: 0.9rem;
+}
+
+.auth-back a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--bone-dim);
+  text-decoration: none;
+  border-radius: 2px;
+  padding-block: 0.25rem;
+  padding-inline: 0.1rem;
+  transition:
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    gap 0.2s ease;
+}
+
+.auth-back a:hover,
+.auth-back a:focus-visible {
+  color: var(--lime);
+  transform: translateX(-3px);
+  gap: 0.5rem;
+}
+
+.auth-back a:active {
+  transform: translateX(-1px);
 }
 
 @media (max-width: 640px) {
