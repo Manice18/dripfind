@@ -21,8 +21,8 @@ function AuthInner() {
     params.get("mode") === "signup" ? "signup" : "login"
   ) as Mode;
   const oauthError = params.get("error");
+  const mode = modeFromUrl;
 
-  const [mode, setMode] = useState<Mode>(modeFromUrl);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,17 +37,12 @@ function AuthInner() {
   }, [mode]);
 
   useEffect(() => {
-    setMode(modeFromUrl);
-  }, [modeFromUrl]);
-
-  useEffect(() => {
     if (!authLoading && user) {
       router.replace("/studio");
     }
   }, [authLoading, user, router]);
 
   function switchMode(next: Mode) {
-    setMode(next);
     setError("");
     const q = new URLSearchParams(params.toString());
     q.set("mode", next);
