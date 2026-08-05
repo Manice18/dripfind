@@ -2,10 +2,10 @@ import { Metadata } from "next";
 
 export function constructMetaData({
   title = "DRIPFIND — AI Outfit Finder for Shoppable Wardrobes",
-  description = "Paste a Pinterest pin or drop a photo. DRIPFIND finds matching clothes across Indian retailers like Myntra, Ajio, and Flipkart so you can shop the look.",
-  image = "/thumbnail.png",
-  authors = { name: "Manice18", url: "https://dripfind.app" },
-  creator = "Manice18",
+  description = "Drop a Pinterest pin or photo. DRIPFIND finds matching clothes across Indian retailers so you can shop the look.",
+  image = "/thumbnail.jpg",
+  authors = { name: "Dripfind", url: "https://dripfind.app" },
+  creator = "Dripfind",
   generator = "Next.js",
   publisher = "DRIPFIND",
   robots = "index, follow",
@@ -35,16 +35,11 @@ export function constructMetaData({
       images: [
         {
           url: image,
+          width: 1200,
+          height: 630,
+          alt: "DRIPFIND — AI outfit finder",
         },
       ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      site: "@Manice18heree",
-      creator: "@Manice18heree",
-      title,
-      description,
-      images: [image],
     },
     metadataBase: new URL("https://dripfind.app"),
     robots,
