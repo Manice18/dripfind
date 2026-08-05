@@ -106,18 +106,17 @@ export default function LandingPage() {
         >
           <h2 id="landing-demo-heading">Watch DRIPFIND in action.</h2>
           <p className="lede narrow">
-            A short walkthrough of paste → analyze → shop — coming soon.
+            A short walkthrough of paste → analyze → shop.
           </p>
-          <div
+          <video
             className="video-slot"
-            role="img"
-            aria-label="Product demo video coming soon"
+            controls
+            playsInline
+            preload="metadata"
+            aria-label="DRIPFIND product demo"
           >
-            <div className="video-slot-inner">
-              <span className="video-label">Coming soon</span>
-              <p>See paste, analyze, and shop in one pass.</p>
-            </div>
-          </div>
+            <source src="/assets/exp2.mp4" type="video/mp4" />
+          </video>
         </section>
 
         <section

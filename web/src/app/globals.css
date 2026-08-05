@@ -1834,11 +1834,9 @@ html.js-landing-motion .landing-section-cta.is-visible .analyze-cta {
   width: 100%;
   border: 1px solid var(--line);
   border-top: 3px solid var(--lime);
-  background:
-    linear-gradient(145deg, rgba(214, 255, 75, 0.1), transparent 42%),
-    rgba(17, 16, 14, 0.72);
-  display: grid;
-  place-items: center;
+  background: rgba(17, 16, 14, 0.72);
+  display: block;
+  object-fit: cover;
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.35);
 }
 
