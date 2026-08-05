@@ -741,7 +741,10 @@ html.js-landing-motion .site-header-landing {
   border: 1px solid rgba(214, 255, 75, 0.25);
   border-top-color: var(--lime);
   border-radius: 50%;
+  /* Start highlight at 12 o'clock; spin always begins from there on mount */
+  transform: rotate(0deg);
   animation: spin 1.4s linear infinite;
+  animation-delay: 0s;
 }
 
 .eyebrow {

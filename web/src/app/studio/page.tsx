@@ -78,6 +78,10 @@ function AppInner() {
   });
 
   useEffect(() => {
+    setStage(0);
+  }, [id]);
+
+  useEffect(() => {
     if (
       !id ||
       result.data?.status === "completed" ||
@@ -158,7 +162,7 @@ function AppInner() {
             </Link>
           </div>
 
-          {showLoading && <LoadingState stage={stage} />}
+          {showLoading && <LoadingState key={id} stage={stage} />}
           {showError && !showLoading && (
             <div className="error-panel" role="alert">
               <h2>Couldn’t finish this look</h2>
