@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 
@@ -20,7 +20,6 @@ function AppInner() {
   const router = useRouter();
   const params = useSearchParams();
   const id = params.get("id");
-  const [stage, setStage] = useState(0);
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -76,22 +75,6 @@ function AppInner() {
       return 1500;
     },
   });
-
-  useEffect(() => {
-    setStage(0);
-  }, [id]);
-
-  useEffect(() => {
-    if (
-      !id ||
-      result.data?.status === "completed" ||
-      result.data?.status === "failed"
-    ) {
-      return;
-    }
-    const t = setInterval(() => setStage((s) => (s + 1) % 5), 2200);
-    return () => clearInterval(t);
-  }, [id, result.data?.status]);
 
   const showHero = !id;
   const showLoading =
@@ -162,7 +145,7 @@ function AppInner() {
             </Link>
           </div>
 
-          {showLoading && <LoadingState key={id} stage={stage} />}
+          {showLoading && <LoadingState key={id} />}
           {showError && !showLoading && (
             <div className="error-panel" role="alert">
               <h2>Couldn’t finish this look</h2>

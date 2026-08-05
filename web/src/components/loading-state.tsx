@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 const STAGES = [
   "Pulling the image",
   "Reading the silhouette",
@@ -8,8 +10,17 @@ const STAGES = [
   "Ranking closest matches",
 ];
 
-export function LoadingState({ stage = 0 }: { stage?: number }) {
+export function LoadingState() {
+  const [stage, setStage] = useState(0);
   const active = Math.min(stage, STAGES.length - 1);
+
+  useEffect(() => {
+    const t = setInterval(
+      () => setStage((s) => (s + 1) % STAGES.length),
+      2200,
+    );
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <section className="loading-panel" aria-live="polite">
