@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export function constructMetaData({
-  title = "DRIPFIND — AI Outfit Finder",
-  description = "Turn any Pinterest outfit into a shoppable wardrobe.",
+  title = "DRIPFIND — AI Outfit Finder for Shoppable Wardrobes",
+  description = "Paste a Pinterest pin or drop a photo. DRIPFIND finds matching clothes across Indian retailers like Myntra, Ajio, and Flipkart so you can shop the look.",
   image = "/thumbnail.png",
   authors = { name: "Manice18", url: "https://dripfind.app" },
   creator = "Manice18",
