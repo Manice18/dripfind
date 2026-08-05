@@ -12,6 +12,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   PUBLIC_API_URL: https://api.dripfind.app
+  PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
 
 jobs:
   test:
@@ -71,8 +72,11 @@ jobs:
           context: ${{ matrix.context }}
           platforms: linux/amd64
           push: true
+          # NEXT_PUBLIC_* only matter for the web image; unused on api (harmless).
           build-args: |
             NEXT_PUBLIC_API_URL=${{ env.PUBLIC_API_URL }}
+            NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${{ secrets.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+            NEXT_PUBLIC_POSTHOG_HOST=${{ env.PUBLIC_POSTHOG_HOST }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.image }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.image }}:${{ github.sha }}

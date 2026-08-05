@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -31,6 +32,9 @@ function AppInner() {
   const analyze = useMutation({
     mutationFn: api.analyze,
     onSuccess: (data) => {
+      posthog.capture("outfit_analysis_completed", {
+        input_method: "pinterest_url",
+      });
       router.push(`/studio?id=${data.id}`);
     },
   });
@@ -38,11 +42,29 @@ function AppInner() {
   const analyzeUpload = useMutation({
     mutationFn: api.analyzeUpload,
     onSuccess: (data) => {
+      posthog.capture("outfit_analysis_completed", {
+        input_method: "image_upload",
+      });
       router.push(`/studio?id=${data.id}`);
     },
   });
 
   const submitting = analyze.isPending || analyzeUpload.isPending;
+
+  function startUrlAnalysis(url: string) {
+    posthog.capture("outfit_analysis_started", {
+      input_method: "pinterest_url",
+    });
+    analyze.mutate(url);
+  }
+
+  function startImageAnalysis(file: File) {
+    posthog.capture("outfit_analysis_started", {
+      input_method: "image_upload",
+      file_type: file.type,
+    });
+    analyzeUpload.mutate(file);
+  }
 
   const result = useQuery({
     queryKey: ["result", id],
@@ -117,8 +139,8 @@ function AppInner() {
               Bewakoof, Westside, H&amp;M, and more.
             </p>
             <AnalyzeForm
-              onSubmitUrl={(url) => analyze.mutate(url)}
-              onSubmitFile={(file) => analyzeUpload.mutate(file)}
+              onSubmitUrl={startUrlAnalysis}
+              onSubmitFile={startImageAnalysis}
               loading={submitting}
             />
             {(analyze.isError || analyzeUpload.isError) && (

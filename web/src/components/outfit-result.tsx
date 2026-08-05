@@ -1,9 +1,11 @@
 "use client";
 
-import type { ClothingItem, Outfit, Product } from "@/types/outfit";
+import posthog from "posthog-js";
+
 import { affiliateProductURL, isAffiliateProduct } from "@/lib/affiliate";
 import { mediaURL } from "@/lib/api";
 import { normalizeProductURL } from "@/lib/product-url";
+import type { ClothingItem, Outfit, Product } from "@/types/outfit";
 
 function formatPrice(p: Product) {
   try {
@@ -31,6 +33,14 @@ function ProductCard({ product }: { product: Product }) {
       data-website={product.website}
       data-affiliate={affiliated ? "yes" : "no"}
       title={affiliated ? "Opens via inr.deals affiliate link" : undefined}
+      onClick={() =>
+        posthog.capture("product_link_clicked", {
+          retailer: product.website,
+          affiliate_link: affiliated,
+          product_id: product.id,
+          match_score: Math.round(product.match_score),
+        })
+      }
     >
       <div className="product-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}

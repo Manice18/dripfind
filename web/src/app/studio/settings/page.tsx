@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
 import { IconLogout } from "@/components/icons";
@@ -58,6 +59,7 @@ export default function SettingsPage() {
     setBusy(true);
     setError("");
     try {
+      posthog.capture("account_deletion_requested");
       await deleteAccount();
       window.location.href = "/";
     } catch (err) {

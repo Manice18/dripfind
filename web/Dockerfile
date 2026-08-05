@@ -10,14 +10,19 @@ RUN npm ci
 COPY . .
 
 # CRITICAL: Next.js inlines NEXT_PUBLIC_* into the client bundle during
-# `next build`. This MUST be a build arg — setting it at runtime in compose or
-# in .env has NO effect, because the value is already compiled into the JS.
+# `next build`. These MUST be build args — setting them at runtime in compose or
+# droplet `.env` has NO effect, because the values are already compiled into JS.
 #
-# Getting this wrong is the single most common way this deploy breaks. Symptoms:
-# the app loads but every API call goes to localhost:8080, or the browser blocks
-# them as mixed content.
+# Getting NEXT_PUBLIC_API_URL wrong: API calls hit localhost / mixed content.
+# Getting PostHog vars wrong: analytics silently never initializes in production.
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+ARG NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
+ENV NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=$NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
+
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
 RUN npm run build
 

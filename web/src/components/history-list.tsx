@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import posthog from "posthog-js";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -15,8 +16,15 @@ export function HistoryList() {
 
   const del = useMutation({
     mutationFn: api.deleteHistory,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["history"] }),
+    onSuccess: () => {
+      posthog.capture("history_entry_deleted");
+      qc.invalidateQueries({ queryKey: ["history"] });
+    },
   });
+
+  function deleteHistoryEntry(entryId: string) {
+    del.mutate(entryId);
+  }
 
   if (isLoading) return <p className="muted">Loading history…</p>;
   if (error) return <p className="error">{(error as Error).message}</p>;
@@ -59,7 +67,7 @@ export function HistoryList() {
           <button
             type="button"
             className="ghost"
-            onClick={() => del.mutate(entry.id)}
+            onClick={() => deleteHistoryEntry(entry.id)}
             aria-label="Delete history entry"
           >
             Remove

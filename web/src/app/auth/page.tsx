@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
@@ -64,6 +65,9 @@ function AuthInner() {
           ? await api.register({ email, password, name })
           : await api.login({ email, password });
       setUser(res.user);
+      posthog.capture(mode === "signup" ? "account_created" : "login_completed", {
+        authentication_method: "password",
+      });
       router.push("/studio");
     } catch (err) {
       setError((err as Error).message);
@@ -152,7 +156,15 @@ function AuthInner() {
 
           <div className="auth-divider">or</div>
 
-          <a className="google-btn" href={googleAuthURL()}>
+          <a
+            className="google-btn"
+            href={googleAuthURL()}
+            onClick={() =>
+              posthog.capture("google_sign_in_started", {
+                authentication_method: "google",
+              })
+            }
+          >
             <svg
               className="google-btn-icon"
               viewBox="0 0 24 24"
