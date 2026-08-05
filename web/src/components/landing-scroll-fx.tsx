@@ -103,10 +103,31 @@ export function LandingScrollFX() {
       link.addEventListener("click", onClick);
     }
 
+    // LandingGate delays the DOM until auth resolves, so the browser’s
+    // initial hash scroll misses. Re-apply deep links like /#demo here.
+    const hash = window.location.hash;
+    let hashScrollTimer = 0;
+    if (hash.length > 1) {
+      const target = document.querySelector<HTMLElement>(hash);
+      if (target) {
+        const scrollToHash = () => {
+          target.scrollIntoView({
+            behavior: reduced ? "auto" : "smooth",
+            block: "start",
+          });
+          setActive(hash.slice(1));
+          target.classList.add("is-visible");
+        };
+        // Wait a frame so layout (sticky header, hero media) has settled.
+        hashScrollTimer = window.setTimeout(scrollToHash, 0);
+      }
+    }
+
     return () => {
       root.classList.remove("js-landing-motion");
       revealObs.disconnect();
       navObs.disconnect();
+      window.clearTimeout(hashScrollTimer);
       for (const link of links) {
         link.removeEventListener("click", onClick);
       }
