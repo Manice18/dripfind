@@ -16,17 +16,28 @@ type Provider interface {
 }
 
 // providerTimeout caps how long any single store can block an item search.
-// Without this, a hanging provider (e.g. Flipkart warm+fetch) waits on the
-// full client timeout twice and stalls the whole pipeline past its deadline.
-const providerTimeout = 12 * time.Second
+// Includes per-provider pacing + scrape-gate wait.
+const providerTimeout = 25 * time.Second
 
 type Engine struct {
 	providers []Provider
 	log       *slog.Logger
+	breaker   *circuitBreaker
+	pacer     *providerPacer
 }
 
 func NewEngine(log *slog.Logger, providers ...Provider) *Engine {
-	return &Engine{providers: providers, log: log}
+	return &Engine{
+		providers: providers,
+		log:       log,
+		breaker:   newCircuitBreaker(2, 2*time.Minute),
+		pacer:     newProviderPacer(400*time.Millisecond, defaultProviderIntervals()),
+	}
+}
+
+// SetBreakerConfig overrides circuit-breaker defaults (threshold trips, cooldown).
+func (e *Engine) SetBreakerConfig(threshold int, cooldown time.Duration) {
+	e.breaker = newCircuitBreaker(threshold, cooldown)
 }
 
 type itemResult struct {
@@ -40,6 +51,7 @@ func (e *Engine) SearchItem(ctx context.Context, item models.ClothingItem, gende
 		products []models.Product
 		err      error
 		ms       int64
+		skipped  bool
 	}
 
 	ch := make(chan providerOut, len(e.providers))
@@ -49,12 +61,28 @@ func (e *Engine) SearchItem(ctx context.Context, item models.ClothingItem, gende
 		wg.Add(1)
 		go func(prov Provider) {
 			defer wg.Done()
+			name := prov.Name()
+			if !e.breaker.Allow(name) {
+				ch <- providerOut{name: name, err: ErrCircuitOpen, skipped: true}
+				return
+			}
 			start := time.Now()
 			pctx, cancel := context.WithTimeout(ctx, providerTimeout)
 			defer cancel()
+
+			if err := e.pacer.Wait(pctx, name); err != nil {
+				ch <- providerOut{name: name, err: err, ms: time.Since(start).Milliseconds()}
+				return
+			}
+
 			products, err := prov.Search(pctx, item, gender)
+			if err != nil {
+				e.breaker.Failure(name, err)
+			} else {
+				e.breaker.Success(name)
+			}
 			ch <- providerOut{
-				name:     prov.Name(),
+				name:     name,
 				products: products,
 				err:      err,
 				ms:       time.Since(start).Milliseconds(),
@@ -74,6 +102,7 @@ func (e *Engine) SearchItem(ctx context.Context, item models.ClothingItem, gende
 			"category", item.Category,
 			"count", len(r.products),
 			"latency_ms", r.ms,
+			"skipped", r.skipped,
 			"error", errString(r.err),
 		)
 		if r.err != nil {

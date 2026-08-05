@@ -39,6 +39,13 @@ type Config struct {
 	S3SecretAccessKey string
 	S3PublicBaseURL   string
 	S3ForcePathStyle  bool
+
+	// Scrape pacing / proxy — VPS IPs get 429 when providers fire in parallel.
+	ScrapeProxyURL         string
+	ScrapeMaxConcurrent    int
+	ScrapeMinIntervalMS    int
+	ScrapeBreakerThreshold int
+	ScrapeBreakerCooldownS int
 }
 
 func Load() (*Config, error) {
@@ -91,6 +98,12 @@ func Load() (*Config, error) {
 		S3SecretAccessKey: getEnv("S3_SECRET_ACCESS_KEY", "minioadmin"),
 		S3PublicBaseURL:   getEnv("S3_PUBLIC_BASE_URL", "http://localhost:9000/dripfind"),
 		S3ForcePathStyle:  getEnvBool("S3_FORCE_PATH_STYLE", true),
+
+		ScrapeProxyURL:         os.Getenv("SCRAPE_PROXY_URL"),
+		ScrapeMaxConcurrent:    getEnvInt("SCRAPE_MAX_CONCURRENT", 2),
+		ScrapeMinIntervalMS:    getEnvInt("SCRAPE_MIN_INTERVAL_MS", 300),
+		ScrapeBreakerThreshold: getEnvInt("SCRAPE_BREAKER_THRESHOLD", 2),
+		ScrapeBreakerCooldownS: getEnvInt("SCRAPE_BREAKER_COOLDOWN_SEC", 120),
 	}
 
 	if cfg.OpenAIAPIKey == "" {

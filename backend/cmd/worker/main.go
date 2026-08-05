@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/manice18/dripfind/backend/internal/config"
@@ -60,6 +61,24 @@ func main() {
 		analyzer = vision.NewOpenAIAnalyzer(cfg.OpenAIAPIKey, cfg.OpenAIModel)
 	}
 
+	if err := search.ConfigureScrape(
+		cfg.ScrapeMaxConcurrent,
+		time.Duration(cfg.ScrapeMinIntervalMS)*time.Millisecond,
+		cfg.ScrapeProxyURL,
+	); err != nil {
+		log.Error("scrape config", "error", err)
+		os.Exit(1)
+	}
+	if cfg.ScrapeProxyURL != "" {
+		log.Info("scrape proxy enabled")
+	}
+	log.Info("scrape gate",
+		"max_concurrent", cfg.ScrapeMaxConcurrent,
+		"min_interval_ms", cfg.ScrapeMinIntervalMS,
+		"breaker_threshold", cfg.ScrapeBreakerThreshold,
+		"breaker_cooldown_sec", cfg.ScrapeBreakerCooldownS,
+	)
+
 	providers := []search.Provider{
 		search.NewMyntraProvider(),
 		search.NewAjioProvider(),
@@ -74,6 +93,9 @@ func main() {
 		log.Info("serp shopping provider enabled")
 	}
 
+	engine := search.NewEngine(log, providers...)
+	engine.SetBreakerConfig(cfg.ScrapeBreakerThreshold, time.Duration(cfg.ScrapeBreakerCooldownS)*time.Second)
+
 	outfitStore := history.NewStore(pool)
 	pipe := &pipeline.Pipeline{
 		Store:     outfitStore,
@@ -81,7 +103,7 @@ func main() {
 		Download:  imagedl.NewDownloader(),
 		Storage:   imageStore,
 		Vision:    analyzer,
-		Search:    search.NewEngine(log, providers...),
+		Search:    engine,
 		Ranker:    ranking.NewScoreRanker(),
 		Log:       log,
 	}

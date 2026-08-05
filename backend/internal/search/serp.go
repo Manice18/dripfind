@@ -66,13 +66,13 @@ func (p *SerpShoppingProvider) Search(ctx context.Context, item models.ClothingI
 
 	var parsed struct {
 		ShoppingResults []struct {
-			Title      string  `json:"title"`
-			Source     string  `json:"source"`
-			Price      string  `json:"price"`
-			Extracted  float64 `json:"extracted_price"`
-			Link       string  `json:"link"`
-			ProductLink string `json:"product_link"`
-			Thumbnail  string  `json:"thumbnail"`
+			Title       string  `json:"title"`
+			Source      string  `json:"source"`
+			Price       string  `json:"price"`
+			Extracted   float64 `json:"extracted_price"`
+			Link        string  `json:"link"`
+			ProductLink string  `json:"product_link"`
+			Thumbnail   string  `json:"thumbnail"`
 		} `json:"shopping_results"`
 	}
 	if err := json.Unmarshal(body, &parsed); err != nil {

@@ -19,10 +19,14 @@ type ShopifyProvider struct {
 }
 
 func NewShopifyProvider(website, baseURL string) *ShopifyProvider {
+	return NewShopifyProviderWithSession(website, baseURL, newSessionClient())
+}
+
+func NewShopifyProviderWithSession(website, baseURL string, session *sessionClient) *ShopifyProvider {
 	return &ShopifyProvider{
 		website: website,
 		baseURL: strings.TrimRight(baseURL, "/"),
-		session: newSessionClient(),
+		session: session,
 	}
 }
 
@@ -155,12 +159,12 @@ func shopifyQueries(item models.ClothingItem, gender string) []string {
 }
 
 type shopifySuggestProduct struct {
-	Title         string  `json:"title"`
-	Vendor        string  `json:"vendor"`
-	Handle        string  `json:"handle"`
-	URL           string  `json:"url"`
-	Image         string  `json:"image"`
-	Price         any     `json:"price"` // string or number depending on theme
+	Title         string `json:"title"`
+	Vendor        string `json:"vendor"`
+	Handle        string `json:"handle"`
+	URL           string `json:"url"`
+	Image         string `json:"image"`
+	Price         any    `json:"price"` // string or number depending on theme
 	FeaturedImage *struct {
 		URL string `json:"url"`
 	} `json:"featured_image"`
@@ -185,18 +189,25 @@ func parseShopifyPrice(v any) float64 {
 }
 
 // HomegrownShopifyBrands are Indian fashion stores from the curated list
-// that expose Shopify predictive search.
+// that expose Shopify predictive search. They share one session + go through
+// the global scrape gate so a VPS IP does not burst 10 Shopify CDNs at once.
 func HomegrownShopifyBrands() []Provider {
-	return []Provider{
-		NewShopifyProvider("snitch", "https://www.snitch.co.in"),
-		NewShopifyProvider("veirdo", "https://veirdo.in"),
-		NewShopifyProvider("westside", "https://www.westside.com"),
-		NewShopifyProvider("offduty", "https://offduty.in"),
-		NewShopifyProvider("freakins", "https://freakins.com"),
-		NewShopifyProvider("pantproject", "https://thepantproject.com"),
-		NewShopifyProvider("bearhouse", "https://www.thebearhouse.com"),
-		NewShopifyProvider("powerlook", "https://powerlook.in"),
-		NewShopifyProvider("bluorng", "https://bluorng.com"),
-		NewShopifyProvider("rarerabbit", "https://rareism.com"),
+	shared := newSessionClient()
+	brands := []struct{ name, url string }{
+		{"snitch", "https://www.snitch.co.in"},
+		{"veirdo", "https://veirdo.in"},
+		{"westside", "https://www.westside.com"},
+		{"offduty", "https://offduty.in"},
+		{"freakins", "https://freakins.com"},
+		{"pantproject", "https://thepantproject.com"},
+		{"bearhouse", "https://www.thebearhouse.com"},
+		{"powerlook", "https://powerlook.in"},
+		{"bluorng", "https://bluorng.com"},
+		{"rarerabbit", "https://rareism.com"},
 	}
+	out := make([]Provider, 0, len(brands))
+	for _, b := range brands {
+		out = append(out, NewShopifyProviderWithSession(b.name, b.url, shared))
+	}
+	return out
 }
