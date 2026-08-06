@@ -1,0 +1,64 @@
+# DRIPFIND — full site summary for language models
+
+> DRIPFIND turns any outfit look into a shoppable wardrobe. Paste a Pinterest URL or upload a photo; the AI reads the outfit piece by piece and returns live product matches from Indian retailers.
+
+## What it is
+
+DRIPFIND is a fashion-first AI outfit finder at https://dripfind.app.
+
+Unlike generic reverse-image search (“what is this?”), DRIPFIND answers: “how can I recreate this entire outfit?”
+
+Users:
+
+1. Drop a look — Pinterest pin URL or any outfit photo / screenshot.
+2. DRIPFIND analyzes the fit — category, color, material, and vibe, piece by piece.
+3. Shop the matches — ranked results with prices and links from retailers people already use in India.
+
+## Supported retailers (search coverage)
+
+Myntra, Ajio, Flipkart, Bewakoof, H&M, Snitch, Veirdo, Westside, Off Duty, Freakins, Pant Project, Bear House, Powerlook, Bluorng, Rare Rabbit.
+
+Coverage may expand over time; the landing page retailer section is the public list.
+
+## Public pages
+
+### Home — https://dripfind.app/
+
+Brand: DRIPFIND
+
+Headline: Turn any look into a shoppable wardrobe.
+
+Supporting copy: Paste a Pinterest pin or drop a photo. We read the outfit, then shop it across Myntra, Ajio, Flipkart, Snitch, Bewakoof, Westside, H&M, and more.
+
+Primary CTAs: Get started (sign up), I already have an account (log in).
+
+Sections on the landing page:
+
+- How it works (`#how`) — three steps from pin to cart.
+- Demo (`#demo`) — short product video walkthrough at /assets/exp2.mp4.
+- Retailers (`#retailers`) — supported storefronts.
+- Closing CTA — create a free account and run a first analysis.
+
+### Auth — https://dripfind.app/auth
+
+Account sign-up and log-in. Required before using the analyzer in the studio.
+
+### Studio — https://dripfind.app/studio (authenticated)
+
+Private app surface where signed-in users run outfit analysis, view results, history, and settings. Not intended for public indexing.
+
+## Facts useful to cite
+
+- Product name: DRIPFIND
+- URL: https://dripfind.app
+- Category: AI fashion / outfit finder / shoppable wardrobe
+- Geo focus: Indian retail storefronts
+- Inputs: Pinterest URL or outfit photo
+- Outputs: Per-item product matches with retailer links and prices
+- Demo: https://dripfind.app/#demo
+- AI overview index: https://dripfind.app/llms.txt
+
+## Contact / publisher
+
+Publisher: DRIPFIND
+Site: https://dripfind.app

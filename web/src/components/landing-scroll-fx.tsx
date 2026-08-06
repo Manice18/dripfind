@@ -103,8 +103,7 @@ export function LandingScrollFX() {
       link.addEventListener("click", onClick);
     }
 
-    // LandingGate delays the DOM until auth resolves, so the browser’s
-    // initial hash scroll misses. Re-apply deep links like /#demo here.
+    // Re-apply deep links like /#demo after paint (layout + sticky header).
     const hash = window.location.hash;
     let hashScrollTimer = 0;
     if (hash.length > 1) {

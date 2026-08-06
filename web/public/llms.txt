@@ -1,0 +1,22 @@
+# DRIPFIND
+
+> DRIPFIND is an AI outfit finder: paste a Pinterest pin or drop a photo, and it turns the look into a shoppable wardrobe across Indian retailers.
+
+DRIPFIND detects individual clothing pieces (category, color, material, vibe), then searches stores such as Myntra, Ajio, Flipkart, Bewakoof, H&M, Snitch, Westside, and more — returning matched products with prices and links.
+
+Public site: https://dripfind.app
+Primary product surface (account required): https://dripfind.app/studio
+
+## Pages
+
+- [Home](https://dripfind.app/): Marketing landing — product pitch, how it works, demo video, retailer list, sign-up CTA.
+- [Demo section](https://dripfind.app/#demo): In-page product walkthrough video (paste → analyze → shop).
+- [How it works](https://dripfind.app/#how): Three-step overview from pin/photo to cart.
+- [Retailers](https://dripfind.app/#retailers): List of supported Indian storefronts searched by DRIPFIND.
+- [Sign up / Log in](https://dripfind.app/auth): Account authentication to use the studio analyzer.
+- [Full site summary](https://dripfind.app/llms-full.txt): Longer plain-text overview for models that prefer a single self-contained document.
+
+## Optional
+
+- [Sitemap](https://dripfind.app/sitemap.xml): Machine-readable list of public URLs.
+- [Robots](https://dripfind.app/robots.txt): Crawler allow/deny rules (studio app routes are private).
